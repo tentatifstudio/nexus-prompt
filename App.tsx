@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Loader2, Settings, Filter, Search, Shield, LogOut, LogIn, User as UserIcon } from 'lucide-react';
+import { Zap, Loader2, Settings, Filter, Search, Shield, LogOut, LogIn, User as UserIcon, AlertCircle, RefreshCw } from 'lucide-react';
 import { PromptItem } from './types';
 import PromptCard from './components/PromptCard';
 import Modal from './components/Modal';
@@ -20,16 +20,15 @@ function App() {
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   
-  // Navigation & View State
   const [currentView, setCurrentView] = useState<'home' | 'admin'>('home');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<PromptItem | null>(null);
   
-  // Tracking views for non-logged in users
   const [viewCount, setViewCount] = useState<number>(() => {
     const saved = localStorage.getItem('nexus_view_count');
     return saved ? parseInt(saved, 10) : 0;
@@ -43,15 +42,17 @@ function App() {
 
   const loadData = async () => {
     setDataLoading(true);
+    setFetchError(null);
     try {
       const [promptsData, catsData] = await Promise.all([
         promptService.getAll(),
         promptService.getCategories()
       ]);
-      setPrompts(promptsData);
+      setPrompts(promptsData || []);
       setCategories(['All', ...catsData]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Fetch failed", error);
+      setFetchError("Unable to connect to the Nexus Archive. Please check your connection.");
     } finally {
       setDataLoading(false);
     }
@@ -74,7 +75,7 @@ function App() {
   };
 
   const filteredData = useMemo(() => {
-    return prompts.filter((item) => {
+    return (prompts || []).filter((item) => {
       const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
       const matchesSearch = searchQuery === '' || 
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -175,6 +176,20 @@ function App() {
             <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
             <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">Initialising Secure Session...</p>
           </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-red-500 mb-6 border border-red-100">
+              <AlertCircle size={40} />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Nexus Connection Error</h2>
+            <p className="text-slate-500 max-w-md mb-8">{fetchError}</p>
+            <button 
+              onClick={loadData}
+              className="px-8 py-3 bg-indigo-600 text-white rounded-full font-bold flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+            >
+              <RefreshCw size={18} /> Retry Connection
+            </button>
+          </div>
         ) : (
           <>
             <HeroCarousel items={prompts.slice(0, 3)} onSelect={handleSelectItem} />
@@ -212,15 +227,11 @@ function App() {
                </div>
             </div>
 
-            <div className="mb-8 flex items-center justify-between">
-               <h2 className="text-4xl font-black tracking-tight text-slate-900 flex items-center gap-3">
-                 The Archive <span className="text-slate-200">/</span> <span className="text-indigo-600">{filteredData.length}</span>
+            <div className="mb-10">
+               <h2 className="text-4xl font-black tracking-tight text-slate-900">
+                 Inspirations
                </h2>
-               {!user && (
-                 <div className="text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 px-4 py-2 rounded-full border border-amber-100 animate-pulse">
-                   Guest Pass: {FREE_VIEW_LIMIT - viewCount} Views Remaining
-                 </div>
-               )}
+               <p className="text-slate-500 font-medium text-sm mt-1">Daily curated prompts</p>
             </div>
 
             {filteredData.length > 0 ? (
