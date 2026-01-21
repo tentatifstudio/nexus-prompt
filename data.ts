@@ -1,0 +1,162 @@
+
+import { PromptItem } from './types';
+
+export const PROMPT_DATA: PromptItem[] = [
+  {
+    id: '1',
+    title: 'Cyberpunk Street Sketch',
+    type: 'IMG2IMG',
+    isPremium: false,
+    // Fix: Added missing required property isTrending
+    isTrending: true,
+    // Fix: Added missing required property category
+    category: 'Cyberpunk',
+    imageSource: 'https://picsum.photos/id/122/800/1000?grayscale&blur=2', 
+    imageResult: 'https://picsum.photos/id/122/800/1000',
+    prompt: 'Hyper-realistic cyberpunk street scene, neon lights, rain-slicked pavement, 8k resolution, ray tracing, cinematic lighting, volumetric fog.',
+    model: 'Stable Diffusion XL',
+    rarity: 'Common',
+    aspectRatio: '4:5',
+    seed: 837492,
+    guidanceScale: 7.5,
+    description: 'Transforming a rough pencil sketch into a vibrant, futuristic cityscape.',
+    date: new Date().toISOString()
+  },
+  {
+    id: '2',
+    title: 'Ethereal Forest Spirit',
+    type: 'TXT2IMG',
+    isPremium: false,
+    // Fix: Added missing required property isTrending
+    isTrending: false,
+    // Fix: Added missing required property category
+    category: 'Illustration',
+    imageSource: 'https://picsum.photos/id/28/800/1000?blur=10',
+    imageResult: 'https://picsum.photos/id/28/800/1000',
+    prompt: 'A mystical forest spirit made of glowing leaves and vines, bioluminescent atmosphere, deep ancient woods, magical realism, soft bokeh, intricate details.',
+    model: 'Midjourney v6',
+    rarity: 'Rare',
+    aspectRatio: '4:5',
+    seed: 102938,
+    guidanceScale: 6.0,
+    description: 'A pure text-to-image generation focusing on organic textures and lighting.',
+    date: new Date().toISOString()
+  },
+  {
+    id: '3',
+    title: 'Exclusive: Marble Greek God',
+    type: 'TXT2IMG',
+    isPremium: true,
+    // Fix: Added missing required property isTrending
+    isTrending: true,
+    // Fix: Added missing required property category
+    category: '3D Render',
+    imageSource: 'https://picsum.photos/id/582/800/1200?blur=10',
+    imageResult: 'https://picsum.photos/id/582/800/1200',
+    prompt: 'Statue of Apollo, carved from pristine white marble with gold kintsugi cracks, dramatic studio lighting, dark background, 8k, masterpiece.',
+    model: 'DALL-E 3',
+    rarity: 'Legendary',
+    aspectRatio: '2:3',
+    seed: 556677,
+    guidanceScale: 8.0,
+    description: 'Premium asset featuring advanced material prompting techniques.',
+    date: new Date().toISOString()
+  },
+  {
+    id: '4',
+    title: 'Vintage Car Restoration',
+    type: 'IMG2IMG',
+    isPremium: true,
+    // Fix: Added missing required property isTrending
+    isTrending: false,
+    // Fix: Added missing required property category
+    category: 'Photography',
+    imageSource: 'https://picsum.photos/id/111/800/600?blur=5&grayscale',
+    imageResult: 'https://picsum.photos/id/111/800/600',
+    prompt: 'Restored 1950s vintage car, shiny chrome, showroom condition, studio lighting, 4k automotive photography.',
+    model: 'ControlNet Canny',
+    rarity: 'Rare',
+    aspectRatio: '4:3',
+    seed: 998811,
+    guidanceScale: 9.0,
+    description: 'Using ControlNet to restore details from a blurry old photograph.',
+    date: new Date().toISOString()
+  },
+   {
+    id: '5',
+    title: 'Abstract Fluid Simulation',
+    type: 'TXT2IMG',
+    isPremium: false,
+    // Fix: Added missing required property isTrending
+    isTrending: false,
+    // Fix: Added missing required property category
+    category: '3D Render',
+    imageSource: 'https://picsum.photos/id/88/800/800?blur=8',
+    imageResult: 'https://picsum.photos/id/88/800/800',
+    prompt: 'Abstract liquid explosion, macro photography, high speed capture, vibrant paint mixing, splash art.',
+    model: 'ImageFX',
+    rarity: 'Common',
+    aspectRatio: '1:1',
+    seed: 123123,
+    guidanceScale: 5.5,
+    date: new Date().toISOString()
+  },
+  {
+    id: '6',
+    title: 'Neon Tokyo Drift',
+    type: 'IMG2IMG',
+    isPremium: true,
+    // Fix: Added missing required property isTrending
+    isTrending: true,
+    // Fix: Added missing required property category
+    category: 'Cyberpunk',
+    imageSource: 'https://picsum.photos/id/132/800/1000?grayscale',
+    imageResult: 'https://picsum.photos/id/132/800/1000',
+    prompt: 'Cyberpunk racing car drifting in neo-tokyo, motion blur, lens flare, cinematic shot, 8k.',
+    model: 'Stable Diffusion 1.5',
+    rarity: 'Legendary',
+    aspectRatio: '4:5',
+    seed: 442211,
+    guidanceScale: 7.0,
+    description: 'High speed action shot transformation.',
+    date: new Date().toISOString()
+  },
+  {
+    id: '7',
+    title: 'Medieval Castle',
+    type: 'TXT2IMG',
+    isPremium: false,
+    // Fix: Added missing required property isTrending
+    isTrending: false,
+    // Fix: Added missing required property category
+    category: 'Illustration',
+    imageSource: 'https://picsum.photos/id/238/800/1000?blur=10',
+    imageResult: 'https://picsum.photos/id/238/800/1000',
+    prompt: 'Fantasy castle on a floating island, clouds, dragons, epic scale, matte painting style.',
+    model: 'Midjourney v5',
+    rarity: 'Common',
+    aspectRatio: '4:5',
+    seed: 778899,
+    guidanceScale: 6.5,
+    date: new Date().toISOString()
+  },
+  {
+    id: '8',
+    title: 'Deep Sea Creature',
+    type: 'TXT2IMG',
+    isPremium: false,
+    // Fix: Added missing required property isTrending
+    isTrending: false,
+    // Fix: Added missing required property category
+    category: 'Realistic',
+    imageSource: 'https://picsum.photos/id/217/800/1000?blur=10',
+    imageResult: 'https://picsum.photos/id/217/800/1000',
+    prompt: 'Bioluminescent deep sea creature, transparent skin, dark ocean, national geographic photography.',
+    model: 'DALL-E 2',
+    rarity: 'Common',
+    aspectRatio: '4:5',
+    seed: 112233,
+    guidanceScale: 7.0,
+    date: new Date().toISOString()
+  }
+];

@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PROMPT NEXUS | Luminous</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              zinc: {
+                950: '#09090b',
+              },
+              slate: {
+                50: '#f8fafc',
+                900: '#0f172a',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            animation: {
+              'float': 'float 20s ease-in-out infinite',
+              'gradient-x': 'gradient-x 3s ease infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.95)' },
+              },
+              'gradient-x': {
+                '0%, 100%': { 'background-position': '0% 50%' },
+                '50%': { 'background-position': '100% 50%' },
+              }
+            },
+          },
+        },
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      body {
+        background-color: #f8fafc;
+        color: #1e293b;
+        min-height: 100vh;
+      }
+      .bg-grid-pattern {
+        background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.65);
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+      }
+      .perspective-1000 { perspective: 1000px; }
+      .preserve-3d { transform-style: preserve-3d; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "framer-motion": "https://esm.sh/framer-motion@^12.27.2",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.49.1",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
