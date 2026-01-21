@@ -13,7 +13,6 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script>
-      // Menyiapkan environment agar tidak error di browser
       window.process = { env: { NODE_ENV: 'production' } };
       
       tailwind.config = {
@@ -45,7 +44,6 @@
       .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 
-    <!-- Importmap: Memastikan semua library menggunakan React 19.0.0 yang sama -->
     <script type="importmap">
 {
   "imports": {
@@ -55,9 +53,12 @@
     "lucide-react": "https://esm.sh/lucide-react@0.460.0?deps=react@19.0.0",
     "framer-motion": "https://esm.sh/framer-motion@11.11.17?deps=react@19.0.0,react-dom@19.0.0",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.46.1",
-    "react/": "https://esm.sh/react@^19.2.3/",
+    "firebase/app": "https://esm.sh/firebase@11.0.1/app",
+    "firebase/auth": "https://esm.sh/firebase@11.0.1/auth",
+    "firebase/analytics": "https://esm.sh/firebase@11.0.1/analytics",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/"
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
@@ -65,7 +66,6 @@
   <body>
     <div id="root"></div>
     
-    <!-- Memastikan React tersedia secara global untuk Babel Standalone -->
     <script type="module">
       import React from 'react';
       import ReactDOM from 'react-dom';
@@ -73,7 +73,6 @@
       window.ReactDOM = ReactDOM;
     </script>
 
-    <!-- Menjalankan entry point dengan Babel transpiler -->
     <script type="text/babel" data-type="module" data-presets="react,typescript" src="./index.tsx"></script>
   </body>
 </html>
