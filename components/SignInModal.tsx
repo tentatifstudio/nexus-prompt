@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Zap, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { X, Zap, Loader2, AlertCircle, ShieldCheck, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface SignInModalProps {
@@ -19,10 +18,14 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => {
     setError(null);
     try {
       await signInWithGoogle();
-      // On successful redirect-based login, the page will refresh or the session will update
     } catch (err: any) {
       console.error("Login Failed:", err);
-      setError("Failed to initialize Google Sign-In. Please try again.");
+      // Deteksi error spesifik dari Supabase
+      if (err.message?.includes('provider is not enabled')) {
+        setError("Google Login is not enabled in Supabase Dashboard. Please enable it in 'Authentication > Providers'.");
+      } else {
+        setError(err.message || "Failed to initialize Google Sign-In. Please try again.");
+      }
       setIsLoading(false);
     }
   };
@@ -45,7 +48,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => {
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
             className="fixed inset-0 z-[71] flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="glass-panel w-full max-w-sm rounded-[32px] p-8 shadow-2xl pointer-events-auto relative text-center bg-white/95 border border-white/80">
+            <div className="glass-panel w-full max-w-md rounded-[32px] p-8 shadow-2xl pointer-events-auto relative text-center bg-white/95 border border-white/80">
               
               <button 
                 onClick={onClose}
@@ -54,19 +57,32 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => {
                 <X size={20} />
               </button>
 
-              <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-indigo-400 rounded-3xl mx-auto flex items-center justify-center mb-8 shadow-xl text-white ring-8 ring-indigo-50">
-                <Zap size={40} fill="currentColor" />
+              <div className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-indigo-400 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-xl text-white ring-8 ring-indigo-50">
+                <Zap size={32} fill="currentColor" />
               </div>
 
-              <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Nexus Vault Access</h2>
-              <p className="text-slate-500 mb-8 leading-relaxed text-sm font-medium">
-                You've reached your preview limit. Sign in with Google to unlock unlimited prompt views and premium tools.
+              <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Nexus Vault Access</h2>
+              <p className="text-slate-500 mb-6 leading-relaxed text-sm font-medium">
+                Sign in with Google to unlock unlimited prompt views and premium library access.
               </p>
 
               {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-2xl flex items-center gap-2 text-left">
-                  <AlertCircle size={16} className="shrink-0" />
-                  {error}
+                <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex flex-col items-start gap-2 text-left animate-shake">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                    <AlertCircle size={14} className="shrink-0" />
+                    Configuration Error
+                  </div>
+                  <p className="text-xs font-medium leading-relaxed">{error}</p>
+                  {error.includes('Supabase Dashboard') && (
+                    <a 
+                      href="https://supabase.com/dashboard/project/_/auth/providers" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-bold underline flex items-center gap-1 mt-1"
+                    >
+                      Go to Dashboard <ExternalLink size={10} />
+                    </a>
+                  )}
                 </div>
               )}
 
@@ -90,7 +106,7 @@ const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => {
                   )}
                 </button>
                 
-                <div className="flex items-center justify-center gap-2 py-4">
+                <div className="flex items-center justify-center gap-2 py-2">
                    <ShieldCheck size={14} className="text-green-500" />
                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secure OAuth Protocol</span>
                 </div>

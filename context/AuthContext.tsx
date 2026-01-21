@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../supabaseClient.ts';
 import { User } from '../types.ts';
@@ -59,7 +58,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         redirectTo: window.location.origin,
       }
     });
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase OAuth Error:", error);
+      throw error;
+    }
   };
 
   const logout = async () => {
