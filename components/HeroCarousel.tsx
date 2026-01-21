@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
@@ -24,16 +23,13 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect }) => {
     return () => clearInterval(timer);
   }, [isPaused, items?.length]);
 
-  // Guard against empty items list to prevent undefined access errors
   if (!items || items.length === 0) {
     return null;
   }
 
-  // Ensure currentIndex is always valid even if items array shrinks
   const safeIndex = currentIndex >= items.length ? 0 : currentIndex;
   const currentItem = items[safeIndex];
 
-  // Additional safety check
   if (!currentItem) return null;
 
   const nextSlide = () => {
@@ -57,13 +53,13 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect }) => {
             onClick={(e) => { e.stopPropagation(); prevSlide(); }}
             className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-white/20 backdrop-blur-md hover:bg-white text-slate-800 border border-white/50 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 hidden md:block"
         >
-            <ChevronLeft size(20) />
+            <ChevronLeft size={20} />
         </button>
         <button 
             onClick={(e) => { e.stopPropagation(); nextSlide(); }}
             className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-white/20 backdrop-blur-md hover:bg-white text-slate-800 border border-white/50 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:block"
         >
-            <ChevronRight size(20) />
+            <ChevronRight size={20} />
         </button>
 
         <AnimatePresence mode='wait'>

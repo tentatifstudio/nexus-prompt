@@ -1,9 +1,5 @@
 {
   "name": "prompt-nexus",
   "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "build": "echo 'No build needed, using browser-side transpilation'",
-    "install": "echo 'Skipping heavy install'"
-  }
+  "private": true
 }
