@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "react": "^19.2.3",
-    "lucide-react": "^0.562.0",
     "react-dom": "^19.2.3",
-    "framer-motion": "^12.27.2",
-    "@supabase/supabase-js": "^2.49.1",
+    "lucide-react": "0.460.0",
+    "framer-motion": "11.11.17",
+    "@supabase/supabase-js": "2.46.1",
     "firebase": "^12.8.0"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '../supabaseClient';
-import { User } from '../types';
+import { supabase } from '../supabaseClient.ts';
+import { User } from '../types.ts';
 
 interface AuthContextType {
   user: User | null;
@@ -21,22 +21,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     name: sbUser.user_metadata.full_name || sbUser.email?.split('@')[0] || 'Explorer',
     avatar: sbUser.user_metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sbUser.id}`,
     email: sbUser.email,
-    plan: 'free' // Plan logic can be expanded here based on a 'profiles' table if needed
+    plan: 'free'
   });
 
   useEffect(() => {
-    // Initial session check
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(mapSupabaseUser(session.user));
+        }
+      } catch (e) {
+        console.error("Auth init error:", e);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     checkSession();
 
-    // Listener for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(mapSupabaseUser(session.user));
