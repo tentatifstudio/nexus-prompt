@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Loader2, Search, Shield, LogOut, LogIn, User as UserIcon, AlertCircle, RefreshCw, Filter } from 'lucide-react';
@@ -9,36 +8,29 @@ import HeroCarousel from './components/HeroCarousel.tsx';
 import AdminPage from './components/AdminPage.tsx';
 import TrendingRow from './components/TrendingRow.tsx';
 import SignInModal from './components/SignInModal.tsx';
+import PricingModal from './components/PricingModal.tsx';
 import { promptService } from './services/promptService.ts';
 import { useAuth } from './context/AuthContext.tsx';
 
 const ADMIN_EMAIL = 'wahyupedia740@gmail.com';
-const FREE_VIEW_LIMIT = 2;
 
 function App() {
-  const { user, signInWithGoogle, logout, loading: authLoading } = useAuth();
+  const { user, logout, upgradeToPro, loading: authLoading } = useAuth();
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
   
   const [currentView, setCurrentView] = useState<'home' | 'admin'>('home');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<PromptItem | null>(null);
-  
-  const [viewCount, setViewCount] = useState<number>(() => {
-    const saved = localStorage.getItem('nexus_view_count');
-    return saved ? parseInt(saved, 10) : 0;
-  });
 
   const isAdmin = user?.email === ADMIN_EMAIL;
-
-  useEffect(() => {
-    localStorage.setItem('nexus_view_count', viewCount.toString());
-  }, [viewCount]);
+  const isPro = user?.plan === 'pro';
 
   const loadData = async () => {
     setDataLoading(true);
@@ -63,14 +55,16 @@ function App() {
   }, []);
 
   const handleSelectItem = (item: PromptItem) => {
-    if (!user && viewCount >= FREE_VIEW_LIMIT) {
-      setShowAuthModal(true);
-      return;
-    }
-    
     setSelectedItem(item);
-    if (!user) {
-      setViewCount(prev => prev + 1);
+  };
+
+  const handleUpgrade = async () => {
+    try {
+      await upgradeToPro();
+      setShowPricingModal(false);
+      alert("Welcome to the Pro Vault! Full access restored.");
+    } catch (err) {
+      alert("Activation failed.");
     }
   };
 
@@ -109,14 +103,19 @@ function App() {
           </div>
           
           <div className="flex items-center gap-4">
+             {user && !isPro && (
+               <button onClick={() => setShowPricingModal(true)} className="hidden md:flex px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest items-center gap-2 shadow-lg hover:scale-105 transition-all">
+                 Get Pro Access
+               </button>
+             )}
              {isAdmin && (
                <button onClick={() => setCurrentView('admin')} className="px-4 py-2 bg-indigo-600 text-white rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg hover:bg-indigo-500 transition-all">
                  <Shield size={14} /> Admin
                </button>
              )}
              <div className="relative">
-                <button onClick={() => setShowSettings(!showSettings)} className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                   {user ? <img src={user.avatar} className="w-8 h-8 rounded-lg" /> : <UserIcon size={20} className="text-slate-400" />}
+                <button onClick={() => setShowSettings(!showSettings)} className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm overflow-hidden">
+                   {user ? <img src={user.avatar} className="w-full h-full object-cover" /> : <UserIcon size={20} className="text-slate-400" />}
                 </button>
                 <AnimatePresence>
                   {showSettings && (
@@ -124,7 +123,10 @@ function App() {
                       {user ? (
                         <>
                           <div className="px-4 py-3 border-b border-slate-100 mb-1">
-                             <p className="text-xs font-bold truncate">{user.name}</p>
+                             <div className="flex items-center gap-2 mb-1">
+                                <p className="text-xs font-bold truncate">{user.name}</p>
+                                {isPro && <span className="bg-amber-100 text-amber-600 text-[8px] px-1 rounded font-black uppercase">Pro</span>}
+                             </div>
                              <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                           </div>
                           <button onClick={() => logout()} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl">
@@ -148,13 +150,6 @@ function App() {
         {dataLoading || authLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
-            <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">Loading...</p>
-          </div>
-        ) : fetchError ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <AlertCircle className="text-red-500 mb-4" size={40} />
-            <h2 className="text-xl font-bold mb-4">{fetchError}</h2>
-            <button onClick={loadData} className="px-6 py-2 bg-indigo-600 text-white rounded-full flex items-center gap-2"><RefreshCw size={18} /> Retry</button>
           </div>
         ) : (
           <>
@@ -164,18 +159,13 @@ function App() {
             <div className="mb-12 space-y-8">
                <div className="relative max-w-2xl mx-auto">
                   <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <input type="text" placeholder="Search archive..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full h-16 pl-16 pr-6 rounded-2xl bg-white border border-slate-100 shadow-xl outline-none" />
+                  <input type="text" placeholder="Search prompts..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full h-16 pl-16 pr-6 rounded-2xl bg-white border border-slate-100 shadow-xl outline-none" />
                </div>
                <div className="flex items-center justify-center gap-2 overflow-x-auto no-scrollbar py-2">
                   {categories.map((cat) => (
                     <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap ${selectedCategory === cat ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 border border-slate-100'}`}>{cat}</button>
                   ))}
                </div>
-            </div>
-
-            <div className="mb-10">
-               <h2 className="text-4xl font-black text-slate-900">Inspirations</h2>
-               <p className="text-slate-500 font-medium text-sm mt-1">Daily curated prompts</p>
             </div>
 
             <motion.div layout className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -189,8 +179,15 @@ function App() {
         )}
       </div>
 
-      <Modal item={selectedItem} isOpen={!!selectedItem} onClose={() => setSelectedItem(null)} />
+      <Modal 
+        item={selectedItem} 
+        isOpen={!!selectedItem} 
+        onClose={() => setSelectedItem(null)} 
+        onOpenAuth={() => setShowAuthModal(true)}
+        onOpenPricing={() => setShowPricingModal(true)}
+      />
       <SignInModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} onUpgrade={handleUpgrade} />
     </div>
   );
 }

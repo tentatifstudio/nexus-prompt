@@ -1,9 +1,11 @@
 
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Copy, CheckCircle2, Bookmark, Star } from 'lucide-react';
+// Fix: Added Zap to the imported icons from lucide-react
+import { Copy, CheckCircle2, Bookmark, Star, Lock, Zap } from 'lucide-react';
 import { PromptItem } from '../types';
 import BeforeAfterSlider from './BeforeAfterSlider';
+import { useAuth } from '../context/AuthContext';
 
 interface PromptCardProps {
   item: PromptItem;
@@ -13,8 +15,7 @@ interface PromptCardProps {
 }
 
 const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved, onToggleSave }) => {
-  const [copied, setCopied] = React.useState(false);
-
+  const { user } = useAuth();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const mouseX = useSpring(x, { stiffness: 100, damping: 20 });
@@ -23,6 +24,8 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved, onToggl
   const rotateY = useTransform(mouseX, [-0.5, 0.5], [-5, 5]);
   const sheenX = useTransform(mouseX, [-0.5, 0.5], [-20, 120]); 
   const sheenY = useTransform(mouseY, [-0.5, 0.5], [-20, 120]);
+
+  const isPremiumLocked = item.isPremium && user?.plan !== 'pro';
 
   const rarityColors: Record<string, string> = {
     Common: 'bg-slate-500',
@@ -67,7 +70,9 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved, onToggl
                 <Star size={8} fill="currentColor" /> {item.rarity}
               </span>
               {item.isPremium && (
-                <span className="bg-white/90 backdrop-blur-md text-slate-900 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase border border-white/50">Pro</span>
+                <span className="bg-amber-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
+                  {isPremiumLocked ? <Lock size={8} /> : <Zap size={8} fill="currentColor" />} Pro
+                </span>
               )}
             </div>
           </div>
@@ -80,7 +85,7 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved, onToggl
              <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100/50">
                 <div className="flex items-center gap-2">
                    <div className="w-5 h-5 rounded-full bg-slate-200"></div>
-                   <span className="text-[9px] font-bold text-slate-400 uppercase">Vault</span>
+                   <span className="text-[9px] font-bold text-slate-400 uppercase">Nexus Archive</span>
                 </div>
                  <div className="flex gap-2">
                    <button onClick={(e) => { e.stopPropagation(); onToggleSave(item.id); }} className={`transition-colors ${isSaved ? 'text-indigo-600' : 'text-slate-300'}`}>

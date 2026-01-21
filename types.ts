@@ -1,4 +1,3 @@
-
 export enum PromptCategory {
   ALL = 'All',
   TRENDING = 'Trending',
@@ -16,6 +15,7 @@ export interface User {
   avatar: string;
   email?: string;
   plan: 'free' | 'pro';
+  is_pro?: boolean; // Reflecting DB column
 }
 
 export interface PromptItem {
@@ -25,7 +25,7 @@ export interface PromptItem {
   isPremium: boolean;
   isTrending: boolean;
   trendingRank?: number | null;
-  category: string; // New field
+  category: string;
   imageResult: string;
   imageSource?: string;
   prompt: string;

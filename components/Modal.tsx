@@ -1,21 +1,31 @@
-
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Maximize2, Share2, Download, CheckCircle2, Play, Terminal } from 'lucide-react';
+import { X, Copy, Maximize2, Share2, Download, CheckCircle2, Play, Terminal, Lock, Zap, LogIn } from 'lucide-react';
 import { PromptItem } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface ModalProps {
   item: PromptItem | null;
   isOpen: boolean;
   onClose: () => void;
+  onOpenAuth?: () => void;
+  onOpenPricing?: () => void;
 }
 
-const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose }) => {
+const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpenPricing }) => {
+  const { user } = useAuth();
   const [copied, setCopied] = React.useState(false);
 
   if (!item) return null;
 
+  const isLocked = !user || (user.plan === 'free' && item.isPremium);
+  
   const handleCopy = () => {
+    if (isLocked) {
+      if (!user) onOpenAuth?.();
+      else onOpenPricing?.();
+      return;
+    }
     navigator.clipboard.writeText(item.prompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -54,7 +64,7 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose }) => {
                  <img 
                   src={item.imageResult} 
                   alt={item.title} 
-                  className="relative z-10 w-full h-full object-contain max-h-[50vh] md:max-h-full rounded-lg shadow-2xl"
+                  className="relative z-10 w-full h-full object-contain max-h-[40vh] md:max-h-full rounded-lg shadow-2xl"
                 />
                 
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4 z-20">
@@ -68,26 +78,25 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose }) => {
               </div>
 
               <div className="w-full md:w-[45%] flex flex-col h-full bg-white/40 backdrop-blur-xl border-l border-white/50">
-                <div className="flex-1 overflow-y-auto p-10 no-scrollbar">
+                <div className="flex-1 overflow-y-auto p-8 md:p-10 no-scrollbar">
                   <div className="mb-8">
                     <div className="flex items-center gap-3 mb-3">
                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-50 px-2 py-1 rounded">
                          {item.model}
                        </span>
+                       {item.isPremium && (
+                         <span className="flex items-center gap-1 bg-amber-100 text-amber-600 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest">
+                           <Zap size={10} fill="currentColor" /> Premium Asset
+                         </span>
+                       )}
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-3">{item.title}</h2>
+                    <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight mb-3">{item.title}</h2>
                     <div className="flex items-center gap-4 text-xs text-slate-500 font-semibold">
-                       <span className="flex items-center gap-1"><CheckCircle2 size={12} className="text-green-500"/> Verified</span>
-                       <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                        <span>{item.category}</span>
                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                        <span>{item.type}</span>
                     </div>
                   </div>
-
-                  <p className="text-slate-600 leading-relaxed mb-8 text-sm font-medium">
-                    {item.description || "A high-quality generative AI asset optimized for professional creative workflows."}
-                  </p>
 
                   <div className="mb-8">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-3">
@@ -95,22 +104,29 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose }) => {
                       Source Prompt
                     </h3>
                     
-                    <div className="relative group">
-                      <div className="p-6 rounded-2xl bg-white border border-slate-100 shadow-inner font-mono text-xs leading-relaxed text-slate-700">
+                    <div className="relative group overflow-hidden rounded-2xl">
+                      <div className={`p-6 rounded-2xl bg-white border border-slate-100 shadow-inner font-mono text-xs leading-relaxed text-slate-700 transition-all duration-500 ${isLocked ? 'blur-md select-none grayscale opacity-40' : ''}`}>
                         {item.prompt}
                       </div>
                       
+                      {isLocked && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white/10 backdrop-blur-[2px]">
+                           <Lock className="text-slate-400 mb-2" size={24} />
+                           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Locked Content</p>
+                        </div>
+                      )}
+
                       <button 
                         onClick={handleCopy}
-                        className="absolute top-3 right-3 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-indigo-600 transition-colors"
+                        className="absolute top-3 right-3 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-indigo-600 transition-colors z-20"
                       >
                         {copied ? <CheckCircle2 size={16} className="text-green-500" /> : <Copy size={16} />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 bg-white/50 p-6 rounded-2xl border border-white/60">
-                    <div>
+                  <div className="grid grid-cols-2 gap-4 bg-white/50 p-6 rounded-2xl border border-white/60 mb-8 relative overflow-hidden">
+                    <div className={isLocked ? 'blur-sm opacity-50 select-none' : ''}>
                       <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Seed</div>
                       <div className="text-sm font-bold text-slate-800 font-mono">{item.seed}</div>
                     </div>
@@ -118,7 +134,7 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose }) => {
                       <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Aspect Ratio</div>
                       <div className="text-sm font-bold text-slate-800">{item.aspectRatio}</div>
                     </div>
-                    <div>
+                    <div className={isLocked ? 'blur-sm opacity-50 select-none' : ''}>
                       <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Guidance</div>
                       <div className="text-sm font-bold text-slate-800">{item.guidanceScale}</div>
                     </div>
@@ -131,9 +147,18 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose }) => {
 
                 <div className="p-6 border-t border-white/50 bg-white/30">
                    <div className="flex gap-3">
-                      <button className="flex-1 bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg">
-                         <Play size={18} fill="currentColor" /> Generate Asset
-                      </button>
+                      {isLocked ? (
+                        <button 
+                          onClick={!user ? onOpenAuth : onOpenPricing}
+                          className="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02]"
+                        >
+                          {!user ? <><LogIn size={18} /> Login to Reveal</> : <><Zap size={18} fill="currentColor"/> Upgrade to Unlock</>}
+                        </button>
+                      ) : (
+                        <button className="flex-1 bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg">
+                           <Play size={18} fill="currentColor" /> Generate Asset
+                        </button>
+                      )}
                       <button className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 transition-colors shadow-sm">
                          <Share2 size={20} />
                       </button>
