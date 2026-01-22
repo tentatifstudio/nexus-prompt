@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../supabaseClient.ts';
 import { User } from '../types.ts';
 
@@ -14,110 +13,102 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=nexus";
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const authChecked = useRef(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfileAndMap = async (sbUser: any): Promise<User> => {
+    // Default fallback values
+    let isPro = false;
+    let username = sbUser.user_metadata?.full_name || sbUser.email?.split('@')[0] || 'Member';
+    let avatarUrl = sbUser.user_metadata?.avatar_url || DEFAULT_AVATAR;
+    let bio = '';
+
     try {
-      const { data, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('id', sbUser.id)
         .single();
-      
-      if (error) return null;
-      return data;
+
+      if (!error && profile) {
+        isPro = !!profile.is_pro;
+        username = profile.username || username;
+        avatarUrl = profile.avatar_url || avatarUrl;
+        bio = profile.bio || '';
+      }
     } catch (err) {
-      return null;
+      console.warn("AuthContext: Profile fetch failed, using fallbacks.");
     }
+
+    return {
+      id: sbUser.id,
+      name: username,
+      avatar: avatarUrl,
+      email: sbUser.email,
+      bio: bio,
+      plan: isPro ? 'pro' : 'free',
+      is_pro: isPro
+    };
   };
 
-  const syncUser = async (sbUser: any) => {
-    if (!sbUser) {
+  const initAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const mappedUser = await fetchProfileAndMap(session.user);
+        setUser(mappedUser);
+      } else {
+        setUser(null);
+      }
+    } catch (err) {
+      console.error("AuthContext Init Error:", err);
       setUser(null);
+    } finally {
       setLoading(false);
-      return;
-    }
-
-    // STEP 1: Buat data dasar (Immediate) agar UI tidak stuck
-    const baseUser: User = {
-      id: sbUser.id,
-      name: sbUser.user_metadata?.full_name || sbUser.email?.split('@')[0] || 'User',
-      avatar: sbUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sbUser.id}`,
-      email: sbUser.email,
-      bio: '',
-      plan: 'free',
-      is_pro: false
-    };
-
-    // Langsung pasang user dasar dan matikan loading
-    setUser(baseUser);
-    setLoading(false);
-
-    // STEP 2: Ambil data profil di background (Non-blocking)
-    const profile = await fetchProfile(sbUser.id);
-    if (profile) {
-      setUser({
-        ...baseUser,
-        name: profile.username || baseUser.name,
-        avatar: profile.avatar_url || baseUser.avatar,
-        bio: profile.bio || '',
-        plan: profile.is_pro ? 'pro' : 'free',
-        is_pro: !!profile.is_pro
-      });
     }
   };
 
   const refreshUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      await syncUser(session.user);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const mappedUser = await fetchProfileAndMap(session.user);
+        setUser(mappedUser);
+      }
+    } catch (err) {
+      console.error("AuthContext Refresh Error:", err);
     }
   };
 
   useEffect(() => {
-    // Safety Timeout: Jika 7 detik tidak selesai loading, paksa berhenti
-    const safetyTimer = setTimeout(() => {
-      if (loading) {
-        console.warn("Auth check timed out. Forcing UI to load.");
-        setLoading(false);
-      }
-    }, 7000);
-
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        await syncUser(session?.user || null);
-      } catch (err) {
-        console.error("Critical Auth Init Error:", err);
-        setLoading(false);
-      } finally {
-        authChecked.current = true;
-      }
-    };
-
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Hanya tampilkan loading jika event adalah login baru atau perubahan penting
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         setLoading(true);
+        try {
+          if (session?.user) {
+            const mappedUser = await fetchProfileAndMap(session.user);
+            setUser(mappedUser);
+          }
+        } finally {
+          setLoading(false);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setLoading(false);
       }
-      
-      await syncUser(session?.user || null);
     });
 
-    return () => {
-      clearTimeout(safetyTimer);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
+    setLoading(true);
     try {
-      setLoading(true); // Mulai loading saat klik login
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -126,6 +117,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       if (error) throw error;
     } catch (err) {
+      console.error("Google Sign-in Error:", err);
       setLoading(false);
       throw err;
     }

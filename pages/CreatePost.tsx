@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Upload, ArrowLeft, Loader2, Sparkles, Image as ImageIcon, Type, Terminal, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -10,18 +9,16 @@ interface CreatePostProps {
 }
 
 const MODELS = ['Flux', 'ImageFX', 'Midjourney', 'Stable Diffusion XL', 'DALL-E 3'];
+const FALLBACK_CATEGORIES = ['Character', 'Cyberpunk', 'Realistic', 'Illustration', '3D Render', 'Photography', 'Abstract'];
 
 const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [catsLoading, setCatsLoading] = useState(true);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>(FALLBACK_CATEGORIES);
   
-  // Before (Reference/Face) State
   const [beforeFile, setBeforeFile] = useState<File | null>(null);
   const [beforePreview, setBeforePreview] = useState<string | null>(null);
-  
-  // After (Result/AI) State
   const [afterFile, setAfterFile] = useState<File | null>(null);
   const [afterPreview, setAfterPreview] = useState<string | null>(null);
   
@@ -41,11 +38,12 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
       setCatsLoading(true);
       try {
         const cats = await promptService.getCategories();
-        setCategories(cats || []);
+        if (cats && cats.length > 0) {
+          setCategories(cats);
+        }
       } catch (err) {
         console.error("Dropdown loading error:", err);
       } finally {
-        // ALWAYS stop loading state to avoid infinite spinners
         setCatsLoading(false);
       }
     };
@@ -105,6 +103,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
 
       onSuccess();
     } catch (err) {
+      console.error(err);
       alert("Failed to share creation. Please try again.");
     } finally {
       setLoading(false);
@@ -124,10 +123,8 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
        </div>
 
        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Visual Section */}
           <div className="lg:col-span-7 space-y-8">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* BEFORE UPLOAD */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Input 1: Face / Reference</label>
@@ -146,7 +143,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
                   </label>
                 </div>
 
-                {/* AFTER UPLOAD */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block">Input 2: AI Result</label>
@@ -177,7 +173,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
              </div>
           </div>
 
-          {/* Details Section */}
           <div className="lg:col-span-5 space-y-8">
              <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl space-y-6">
                 <div>
@@ -199,9 +194,8 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
                    </div>
                    <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Category</label>
-                      <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-black uppercase outline-none disabled:opacity-50" disabled={catsLoading}>
+                      <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-black uppercase outline-none">
                          <option value="">{catsLoading ? 'Loading segments...' : 'Select Segment'}</option>
-                         {!catsLoading && categories.length === 0 && <option value="" disabled>No categories found</option>}
                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                    </div>
