@@ -26,83 +26,128 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .eq('id', userId)
         .single();
       
-      if (error) throw error;
+      // If error or no data, we return null but don't throw to avoid breaking the flow
+      if (error) {
+        console.warn("Profile fetch warning (might not exist yet):", error.message);
+        return null;
+      }
       return data;
     } catch (err) {
+      console.error("Profile fetch error:", err);
       return null;
     }
   };
 
   const mapSupabaseUser = async (sbUser: any): Promise<User> => {
     const profile = await fetchProfile(sbUser.id);
+    
+    // Handle cases where profile might be null or partially filled
+    const isPro = profile?.is_pro ?? false;
+    const username = profile?.username || sbUser.user_metadata?.full_name || sbUser.email?.split('@')[0] || 'User';
+    const avatarUrl = profile?.avatar_url || sbUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sbUser.id}`;
+
     return {
       id: sbUser.id,
-      name: profile?.username || sbUser.user_metadata.full_name || sbUser.email?.split('@')[0] || 'Explorer',
-      avatar: profile?.avatar_url || sbUser.user_metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sbUser.id}`,
+      name: username,
+      avatar: avatarUrl,
       email: sbUser.email,
-      bio: profile?.bio,
-      plan: profile?.is_pro ? 'pro' : 'free',
-      is_pro: profile?.is_pro
+      bio: profile?.bio || '',
+      plan: isPro ? 'pro' : 'free',
+      is_pro: isPro
     };
   };
 
   const refreshUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const mappedUser = await mapSupabaseUser(session.user);
-      setUser(mappedUser);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const mappedUser = await mapSupabaseUser(session.user);
+        setUser(mappedUser);
+      }
+    } catch (err) {
+      console.error("Refresh user error:", err);
     }
   };
 
   useEffect(() => {
     const initAuth = async () => {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const mappedUser = await mapSupabaseUser(session.user);
-        setUser(mappedUser);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const mappedUser = await mapSupabaseUser(session.user);
+          setUser(mappedUser);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Auth init error:", err);
+        setUser(null);
+      } finally {
+        // ALWAYS set loading to false to prevent infinite spinners
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const mappedUser = await mapSupabaseUser(session.user);
-        setUser(mappedUser);
-      } else {
+      setLoading(true);
+      try {
+        if (session?.user) {
+          const mappedUser = await mapSupabaseUser(session.user);
+          setUser(mappedUser);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Auth state change error:", err);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      }
-    });
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error("Google Sign-in error:", err);
+      throw err;
+    }
   };
 
   const upgradeToPro = async () => {
     if (!user) return;
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_pro: true })
-      .eq('id', user.id);
-    if (error) throw error;
-    await refreshUser();
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_pro: true })
+        .eq('id', user.id);
+      if (error) throw error;
+      await refreshUser();
+    } catch (err) {
+      console.error("Upgrade error:", err);
+      throw err;
+    }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
 
   return (

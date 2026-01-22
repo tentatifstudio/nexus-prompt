@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Settings as SettingsIcon, LayoutGrid, FileText, Info } from 'lucide-react';
+import { Loader2, Settings as SettingsIcon, LayoutGrid, FileText, Info, UserCircle } from 'lucide-react';
 import { PromptItem } from '../types';
 import { promptService } from '../services/promptService';
 import { useAuth } from '../context/AuthContext';
@@ -53,11 +53,17 @@ const PublicProfile = () => {
        <div className="mb-20 flex flex-col md:flex-row items-center gap-12 text-center md:text-left">
           <div className="relative">
              <div className="w-32 h-32 md:w-48 md:h-48 rounded-[48px] overflow-hidden bg-white shadow-2xl p-2 border border-slate-100">
-                <img 
-                  src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`} 
-                  className="w-full h-full object-cover rounded-[40px]" 
-                  alt="Profile" 
-                />
+                {profile.avatar_url ? (
+                  <img 
+                    src={profile.avatar_url} 
+                    className="w-full h-full object-cover rounded-[40px]" 
+                    alt="Profile" 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 rounded-[40px]">
+                    <UserCircle size={80} />
+                  </div>
+                )}
              </div>
              {profile.is_pro && (
                <div className="absolute -bottom-2 -right-2 bg-amber-400 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg border-2 border-white">Pro</div>
@@ -66,7 +72,7 @@ const PublicProfile = () => {
 
           <div className="flex-1">
              <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-                <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">{profile.username || 'Explorer'}</h1>
+                <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">{profile.username || 'Anonymous'}</h1>
                 {isOwner && (
                   <Link to="/settings" className="w-fit flex items-center gap-2 px-6 py-2 rounded-full bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
                     <SettingsIcon size={14} /> Edit Profile

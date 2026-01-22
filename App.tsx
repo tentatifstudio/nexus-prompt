@@ -173,7 +173,13 @@ function App() {
              {user && (
                <div className="relative">
                   <button onClick={() => setShowSettingsDropdown(!showSettingsDropdown)} className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm overflow-hidden ring-2 ring-transparent hover:ring-indigo-500 transition-all relative">
-                     <img src={user.avatar} className="w-full h-full object-cover" alt="User Avatar" />
+                     {user.avatar ? (
+                        <img src={user.avatar} className="w-full h-full object-cover" alt="User Avatar" />
+                     ) : (
+                        <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400">
+                           <UserCircle size={24} />
+                        </div>
+                     )}
                      {user.is_pro && <div className="absolute top-0 right-0 w-3 h-3 bg-amber-400 border-2 border-white rounded-full" />}
                   </button>
                   <AnimatePresence>
@@ -181,7 +187,7 @@ function App() {
                       <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:10 }} className="absolute right-0 mt-2 w-56 glass-panel rounded-[24px] p-2 shadow-2xl z-[100] border border-white/50 bg-white/95">
                         <div className="px-4 py-3 border-b border-slate-100 mb-1 flex justify-between items-center">
                            <div className="overflow-hidden">
-                              <p className="text-xs font-bold truncate">{user.name}</p>
+                              <p className="text-xs font-bold truncate">{user.name || 'Anonymous'}</p>
                               <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                            </div>
                            {user.is_pro && (
