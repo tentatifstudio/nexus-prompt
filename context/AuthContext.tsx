@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '../supabaseClient.ts';
 import { User } from '../types.ts';
 
@@ -17,6 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const authChecked = useRef(false);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -26,93 +27,97 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .eq('id', userId)
         .single();
       
-      // If error or no data, we return null but don't throw to avoid breaking the flow
-      if (error) {
-        console.warn("Profile fetch warning (might not exist yet):", error.message);
-        return null;
-      }
+      if (error) return null;
       return data;
     } catch (err) {
-      console.error("Profile fetch error:", err);
       return null;
     }
   };
 
-  const mapSupabaseUser = async (sbUser: any): Promise<User> => {
-    const profile = await fetchProfile(sbUser.id);
-    
-    // Handle cases where profile might be null or partially filled
-    const isPro = profile?.is_pro ?? false;
-    const username = profile?.username || sbUser.user_metadata?.full_name || sbUser.email?.split('@')[0] || 'User';
-    const avatarUrl = profile?.avatar_url || sbUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sbUser.id}`;
+  const syncUser = async (sbUser: any) => {
+    if (!sbUser) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
 
-    return {
+    // STEP 1: Buat data dasar (Immediate) agar UI tidak stuck
+    const baseUser: User = {
       id: sbUser.id,
-      name: username,
-      avatar: avatarUrl,
+      name: sbUser.user_metadata?.full_name || sbUser.email?.split('@')[0] || 'User',
+      avatar: sbUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sbUser.id}`,
       email: sbUser.email,
-      bio: profile?.bio || '',
-      plan: isPro ? 'pro' : 'free',
-      is_pro: isPro
+      bio: '',
+      plan: 'free',
+      is_pro: false
     };
+
+    // Langsung pasang user dasar dan matikan loading
+    setUser(baseUser);
+    setLoading(false);
+
+    // STEP 2: Ambil data profil di background (Non-blocking)
+    const profile = await fetchProfile(sbUser.id);
+    if (profile) {
+      setUser({
+        ...baseUser,
+        name: profile.username || baseUser.name,
+        avatar: profile.avatar_url || baseUser.avatar,
+        bio: profile.bio || '',
+        plan: profile.is_pro ? 'pro' : 'free',
+        is_pro: !!profile.is_pro
+      });
+    }
   };
 
   const refreshUser = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const mappedUser = await mapSupabaseUser(session.user);
-        setUser(mappedUser);
-      }
-    } catch (err) {
-      console.error("Refresh user error:", err);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await syncUser(session.user);
     }
   };
 
   useEffect(() => {
+    // Safety Timeout: Jika 7 detik tidak selesai loading, paksa berhenti
+    const safetyTimer = setTimeout(() => {
+      if (loading) {
+        console.warn("Auth check timed out. Forcing UI to load.");
+        setLoading(false);
+      }
+    }, 7000);
+
     const initAuth = async () => {
-      setLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const mappedUser = await mapSupabaseUser(session.user);
-          setUser(mappedUser);
-        } else {
-          setUser(null);
-        }
+        await syncUser(session?.user || null);
       } catch (err) {
-        console.error("Auth init error:", err);
-        setUser(null);
-      } finally {
-        // ALWAYS set loading to false to prevent infinite spinners
+        console.error("Critical Auth Init Error:", err);
         setLoading(false);
+      } finally {
+        authChecked.current = true;
       }
     };
 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setLoading(true);
-      try {
-        if (session?.user) {
-          const mappedUser = await mapSupabaseUser(session.user);
-          setUser(mappedUser);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error("Auth state change error:", err);
-        setUser(null);
-      } finally {
-        setLoading(false);
+      // Hanya tampilkan loading jika event adalah login baru atau perubahan penting
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        setLoading(true);
       }
+      
+      await syncUser(session?.user || null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = async () => {
     try {
+      setLoading(true); // Mulai loading saat klik login
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -121,7 +126,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       if (error) throw error;
     } catch (err) {
-      console.error("Google Sign-in error:", err);
+      setLoading(false);
       throw err;
     }
   };
@@ -142,11 +147,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
+    setLoading(true);
     try {
       await supabase.auth.signOut();
       setUser(null);
-    } catch (err) {
-      console.error("Logout error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
