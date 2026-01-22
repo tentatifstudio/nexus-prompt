@@ -11,18 +11,19 @@ interface PricingModalProps {
 const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onUpgrade }) => {
   const [isUpgrading, setIsUpgrading] = useState(false);
   
-  // WhatsApp Integration
-  const WA_NUMBER = "6281234567890"; // Ganti dengan nomor Anda
-  const WA_MESSAGE = encodeURIComponent("Halo Admin Prompt Nexus, saya ingin upgrade ke Pro Vault. Mohon info detail pembayarannya.");
-  const WA_LINK = `https://wa.me/${WA_NUMBER}?text=${WA_MESSAGE}`;
+  // WhatsApp Configuration
+  const WA_ADMIN_NUMBER = "6281234567890"; // Ganti dengan nomor Admin Anda
+  const WA_MESSAGE = encodeURIComponent("Halo Admin Prompt Nexus, saya tertarik untuk upgrade ke PRO VAULT. Bagaimana langkah pembayarannya?");
+  const WA_URL = `https://wa.me/${WA_ADMIN_NUMBER}?text=${WA_MESSAGE}`;
 
-  const handleUpgradeClick = async () => {
+  const handleInstantUpgrade = async () => {
     setIsUpgrading(true);
     try {
-      // Simulate real-world payment check or just instant upgrade for now
       await onUpgrade();
+      onClose();
     } catch (err) {
       console.error(err);
+      alert("Upgrade failed. Please contact admin.");
     } finally {
       setIsUpgrading(false);
     }
@@ -54,24 +55,24 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onUpgrade 
                 <X size={20} />
               </button>
 
-              {/* LEFT: FREE TIER */}
-              <div className="w-full md:w-1/2 p-10 md:p-14 bg-slate-50 flex flex-col justify-center border-b md:border-b-0 md:border-r border-slate-200">
-                <div className="mb-8">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Current Status</span>
-                  <h3 className="text-4xl font-black text-slate-900 mt-1">Free Tier</h3>
-                  <p className="text-slate-500 mt-3 text-sm font-medium leading-relaxed">Perfect for exploring and daily inspirations.</p>
+              {/* FREE TIER */}
+              <div className="w-full md:w-1/2 p-10 md:p-14 bg-slate-50 border-r border-slate-200">
+                <div className="mb-10">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Plan</span>
+                  <h3 className="text-4xl font-black text-slate-900 mt-2">Explorer</h3>
+                  <p className="text-slate-500 mt-4 text-sm font-medium leading-relaxed">Perfect for browsing and basic prompt inspirations.</p>
                 </div>
                 
                 <ul className="space-y-4 mb-10">
                    <li className="flex items-center gap-3 text-sm font-bold text-slate-600">
                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500"><Check size={12} /></div>
-                     Browse all thumbnails
+                     View Common Prompts
                    </li>
                    <li className="flex items-center gap-3 text-sm font-bold text-slate-400 line-through">
-                     Copy Premium Prompts
+                     Unlock Legendary Prompts
                    </li>
                    <li className="flex items-center gap-3 text-sm font-bold text-slate-400 line-through">
-                     View Advanced Settings
+                     Access Secret Seeds
                    </li>
                 </ul>
 
@@ -79,62 +80,60 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onUpgrade 
                   onClick={onClose}
                   className="w-full py-4 rounded-2xl border-2 border-slate-200 text-slate-500 font-black text-xs uppercase tracking-widest hover:bg-white hover:border-slate-300 transition-all"
                 >
-                  Continue Browsing
+                  Stay as Explorer
                 </button>
               </div>
 
-              {/* RIGHT: PRO TIER */}
+              {/* PRO TIER */}
               <div className="w-full md:w-1/2 p-10 md:p-14 bg-slate-900 text-white relative overflow-hidden flex flex-col justify-center">
-                {/* Background Decor */}
-                <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600 rounded-full blur-[100px] opacity-20 translate-x-1/4 -translate-y-1/4"></div>
+                <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600 rounded-full blur-[120px] opacity-20 translate-x-1/4 -translate-y-1/4"></div>
                 
                 <div className="relative z-10">
-                  <div className="mb-8">
+                  <div className="mb-10">
                     <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-4">
-                       <Zap size={12} fill="currentColor" /> Pro Access
+                       <Zap size={12} fill="currentColor" /> Highly Recommended
                     </span>
-                    <h3 className="text-4xl font-black text-white">
-                      PRO<span className="text-lg text-indigo-400 font-medium ml-2 tracking-normal uppercase">Vault</span>
-                    </h3>
-                    <p className="text-slate-400 mt-3 text-sm font-medium leading-relaxed">Unlock all premium prompts, seeds, and advanced model settings.</p>
+                    <h3 className="text-4xl font-black text-white">PRO VAULT</h3>
+                    <p className="text-slate-400 mt-4 text-sm font-medium leading-relaxed">Full access to our private archive of master-level prompts.</p>
                   </div>
 
                   <ul className="space-y-4 mb-10">
                      <li className="flex items-center gap-3 text-sm font-bold text-indigo-100">
-                       <div className="bg-indigo-600 p-1.5 rounded-full"><Check size={12} /></div>
-                       Unlimited Premium Content
+                       <div className="bg-indigo-600 p-1.5 rounded-full shadow-lg shadow-indigo-600/20"><Check size={12} /></div>
+                       Unlimited Premium Unlocks
                      </li>
                      <li className="flex items-center gap-3 text-sm font-bold text-indigo-100">
-                       <div className="bg-indigo-600 p-1.5 rounded-full"><Check size={12} /></div>
-                       Full Prompt Reveal (No Blur)
+                       <div className="bg-indigo-600 p-1.5 rounded-full shadow-lg shadow-indigo-600/20"><Check size={12} /></div>
+                       Copy Seeds & Settings
                      </li>
                      <li className="flex items-center gap-3 text-sm font-bold text-indigo-100">
-                       <div className="bg-indigo-600 p-1.5 rounded-full"><Check size={12} /></div>
-                       Priority Archive Support
+                       <div className="bg-indigo-600 p-1.5 rounded-full shadow-lg shadow-indigo-600/20"><Check size={12} /></div>
+                       New Content Every 24h
                      </li>
                   </ul>
 
                   <div className="space-y-3">
                     <a 
-                      href={WA_LINK}
+                      href={WA_URL}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-5 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-600/30 hover:bg-indigo-500 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                      className="w-full py-5 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest shadow-2xl shadow-indigo-600/40 hover:bg-indigo-500 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                     >
-                      <MessageSquare size={16} fill="currentColor" /> 
-                      Upgrade via WhatsApp
+                      <MessageSquare size={18} fill="currentColor" /> 
+                      Contact Admin for Upgrade
                     </a>
                     
                     <button 
-                      onClick={handleUpgradeClick}
+                      onClick={handleInstantUpgrade}
                       disabled={isUpgrading}
-                      className="w-full py-3 text-[10px] text-slate-500 font-black uppercase tracking-widest hover:text-white transition-colors"
+                      className="w-full py-3 text-[10px] text-slate-500 font-black uppercase tracking-widest hover:text-white transition-colors flex items-center justify-center gap-2"
                     >
-                      {isUpgrading ? "Checking..." : "Instant Demo Upgrade (Test)"}
+                      {isUpgrading ? <Loader2 size={12} className="animate-spin" /> : <Star size={12} fill="currentColor" />}
+                      Instant Activation (Demo Mode)
                     </button>
                   </div>
                   
-                  <p className="text-center text-[10px] font-bold text-slate-500 mt-6 uppercase tracking-widest">Join 1,200+ Nexus Creators</p>
+                  <p className="text-center text-[10px] font-bold text-slate-500 mt-8 uppercase tracking-widest">Join 500+ Pro Creators</p>
                 </div>
               </div>
 

@@ -1,3 +1,4 @@
+
 export enum PromptCategory {
   ALL = 'All',
   TRENDING = 'Trending',
@@ -9,13 +10,18 @@ export enum PromptCategory {
 export type PromptType = 'IMG2IMG' | 'TXT2IMG';
 export type RarityType = 'Common' | 'Rare' | 'Legendary';
 
+export interface Profile {
+  id: string;
+  username: string;
+  avatar_url: string;
+}
+
 export interface User {
   id: string;
   name: string;
   avatar: string;
   email?: string;
   plan: 'free' | 'pro';
-  is_pro?: boolean; // Reflecting DB column
 }
 
 export interface PromptItem {
@@ -36,4 +42,6 @@ export interface PromptItem {
   guidanceScale: number;
   description?: string;
   date: string;
+  user_id?: string;
+  profiles?: Profile; // Relation to creator
 }

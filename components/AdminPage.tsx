@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Upload, Check, Loader2, Sparkles, TrendingUp, 
   Hash, ArrowLeft, Image as ImageIcon, Dice5, Sliders, 
-  Terminal, FileText, Layout, Info, Trash2, Shield, Settings, AlertTriangle
+  Terminal, FileText, Layout, Info, Trash2, Shield, Settings, AlertTriangle, Zap
 } from 'lucide-react';
 import { promptService } from '../services/promptService';
 import { useAuth } from '../context/AuthContext';
@@ -42,7 +42,6 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
     guidance_scale: 7.5
   });
 
-  // Strict Security Check
   if (user?.email !== ADMIN_EMAIL) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
@@ -50,7 +49,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
           <AlertTriangle size={40} />
         </div>
         <h1 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Access Denied</h1>
-        <p className="text-slate-400 max-w-xs text-sm mb-8 leading-relaxed">This terminal is restricted to Nexus Administration. Unauthorized access attempts are logged.</p>
+        <p className="text-slate-400 max-w-xs text-sm mb-8 leading-relaxed">Terminal ini dibatasi hanya untuk Administrasi Nexus.</p>
         <button onClick={onBack} className="bg-white text-black px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Return Home</button>
       </div>
     );
@@ -82,15 +81,15 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!files.after) return alert("Final image is required.");
-    if (!formData.category) return alert("Select a category.");
+    if (!files.after) return alert("Final result image is required!");
+    if (!formData.category) return alert("Please select a category.");
     
     setLoading(true);
     try {
       const imageAfterUrl = await promptService.uploadImage(files.after);
       const imageBeforeUrl = files.before ? await promptService.uploadImage(files.before) : null;
 
-      if (!imageAfterUrl) throw new Error("Storage failure.");
+      if (!imageAfterUrl) throw new Error("Failed to upload image.");
 
       await promptService.createPrompt({
         title: formData.title,
@@ -98,10 +97,10 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
         image_result: imageAfterUrl,
         image_source: imageBeforeUrl,
         model: formData.model,
-        type: formData.type,
+        type: files.before ? 'IMG2IMG' : 'TXT2IMG',
         category: formData.category,
         rarity: formData.rarity,
-        is_premium: formData.is_premium,
+        is_premium: formData.is_premium || formData.rarity !== 'Common',
         is_trending: formData.is_trending,
         trending_rank: formData.trending_rank === '' ? null : Number(formData.trending_rank),
         aspect_ratio: formData.aspect_ratio,
@@ -129,7 +128,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
       }, 2000);
     } catch (err) {
       console.error(err);
-      alert("Publication failed. Check your Supabase configuration.");
+      alert("Error publishing asset. Check connection.");
     } finally {
       setLoading(false);
     }
@@ -148,7 +147,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
                     <Shield size={16} className="text-indigo-400" />
                     <h1 className="text-2xl font-black tracking-tight uppercase">Nexus Controller</h1>
                 </div>
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Administrator Level Access</p>
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Administrator Terminal</p>
               </div>
            </div>
         </div>
@@ -156,23 +155,29 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
 
       <main className="max-w-7xl mx-auto px-6 pt-12">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          
+          {/* LEFT: VISUAL & PROMPT */}
           <div className="xl:col-span-8 space-y-8">
             <section className="bg-white/[0.03] border border-white/10 rounded-[32px] p-8">
                <div className="flex items-center gap-3 mb-8">
                   <div className="w-10 h-10 bg-indigo-600/20 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-500/20"><ImageIcon size={20}/></div>
-                  <h3 className="text-xl font-black uppercase tracking-tight">Visual Repository</h3>
+                  <h3 className="text-xl font-black uppercase tracking-tight">Visual Assets / <span className="text-slate-500 font-medium">Aset Visual</span></h3>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initial Source</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex justify-between">
+                      Initial Source / <span className="text-slate-600">Gambar Awal (Opsional)</span>
+                    </label>
                     <label className={`flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-[24px] cursor-pointer transition-all overflow-hidden ${previews.before ? 'border-transparent bg-slate-900' : 'border-white/10 hover:border-indigo-500/50 bg-white/5'}`}>
                         {previews.before ? <img src={previews.before} className="w-full h-full object-cover" /> : <Upload size={20} className="text-slate-500" />}
                         <input type="file" className="hidden" onChange={e => handleFileChange(e, 'before')} />
                     </label>
                   </div>
                   <div className="space-y-4">
-                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Final Result *</label>
+                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex justify-between">
+                      Final Result / <span className="text-indigo-600">Gambar Hasil *</span>
+                    </label>
                     <label className={`flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-[24px] cursor-pointer transition-all overflow-hidden ${previews.after ? 'border-transparent bg-slate-900' : 'border-indigo-500/20 bg-indigo-500/5'}`}>
                         {previews.after ? <img src={previews.after} className="w-full h-full object-cover" /> : <Upload size={20} className="text-indigo-400" />}
                         <input type="file" required className="hidden" onChange={e => handleFileChange(e, 'after')} />
@@ -184,35 +189,56 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
             <section className="bg-slate-900 border border-white/10 rounded-[32px] p-8">
                <div className="flex items-center gap-3 mb-8">
                   <div className="w-10 h-10 bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400"><Terminal size={20}/></div>
-                  <h3 className="text-xl font-black uppercase tracking-tight">Prompt Protocol</h3>
+                  <h3 className="text-xl font-black uppercase tracking-tight">Prompt Matrix / <span className="text-slate-500 font-medium">Data Prompt</span></h3>
                </div>
-               <input 
-                  required
-                  placeholder="Asset Title (e.g. Cyberpunk City)"
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                  className="w-full bg-slate-950 border border-white/5 rounded-2xl p-6 mb-6 text-sm font-bold outline-none focus:border-indigo-500"
-               />
-               <textarea 
-                  required 
-                  value={formData.prompt} 
-                  onChange={e => setFormData({...formData, prompt: e.target.value})} 
-                  className="w-full bg-slate-950 text-indigo-300 font-mono text-xs p-8 rounded-[24px] h-48 outline-none border border-white/5 focus:border-indigo-500/40" 
-                  placeholder="Paste AI prompt here..."
-               />
+               
+               <div className="space-y-6">
+                 <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Title / Judul Asset</label>
+                    <input 
+                        required
+                        placeholder="e.g. Cyberpunk Night City"
+                        value={formData.title}
+                        onChange={e => setFormData({...formData, title: e.target.value})}
+                        className="w-full bg-slate-950 border border-white/5 rounded-2xl p-6 text-sm font-bold outline-none focus:border-indigo-500"
+                    />
+                 </div>
+
+                 <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Short Description / Deskripsi Singkat</label>
+                    <input 
+                        placeholder="Explain the vibe of this asset..."
+                        value={formData.description}
+                        onChange={e => setFormData({...formData, description: e.target.value})}
+                        className="w-full bg-slate-950 border border-white/5 rounded-2xl p-6 text-sm font-bold outline-none focus:border-indigo-500"
+                    />
+                 </div>
+
+                 <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Full Prompt / Instruksi Lengkap</label>
+                    <textarea 
+                        required 
+                        value={formData.prompt} 
+                        onChange={e => setFormData({...formData, prompt: e.target.value})} 
+                        className="w-full bg-slate-950 text-indigo-300 font-mono text-xs p-8 rounded-[24px] h-48 outline-none border border-white/5 focus:border-indigo-500/40" 
+                        placeholder="Paste your secret AI prompt here..."
+                    />
+                 </div>
+               </div>
             </section>
           </div>
 
+          {/* RIGHT: SETTINGS */}
           <div className="xl:col-span-4 space-y-8">
             <section className="bg-white/[0.03] border border-white/10 rounded-[32px] p-8">
                <div className="flex items-center gap-3 mb-8">
                   <div className="w-10 h-10 bg-purple-600/20 rounded-2xl flex items-center justify-center text-purple-400"><Sliders size={20}/></div>
-                  <h3 className="text-lg font-black uppercase tracking-tight">Technical Matrix</h3>
+                  <h3 className="text-lg font-black uppercase tracking-tight">Technical / <span className="text-slate-500">Teknis</span></h3>
                </div>
 
                <div className="space-y-6">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">AI Model</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">AI Model / Versi AI</label>
                     <div className="grid grid-cols-2 gap-2">
                         {MODELS.map(m => (
                             <button key={m} type="button" onClick={() => setFormData({...formData, model: m})} className={`px-2 py-2.5 rounded-xl text-[10px] font-bold border ${formData.model === m ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-900 border-white/5 text-slate-500'}`}>{m}</button>
@@ -221,7 +247,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Aspect Ratio</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Aspect Ratio / Rasio</label>
                     <div className="grid grid-cols-3 gap-2">
                         {ASPECT_RATIOS.map(ratio => (
                             <button key={ratio} type="button" onClick={() => setFormData({...formData, aspect_ratio: ratio})} className={`py-2 rounded-xl text-[10px] font-black border ${formData.aspect_ratio === ratio ? 'bg-white text-black' : 'bg-slate-900 border-white/5 text-slate-600'}`}>{ratio}</button>
@@ -230,46 +256,79 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center"><label className="text-[10px] font-black text-slate-500 uppercase">Guidance Scale</label><span className="text-xs text-indigo-400 font-bold">{formData.guidance_scale}</span></div>
+                    <div className="flex justify-between items-center"><label className="text-[10px] font-black text-slate-500 uppercase">Guidance Scale (CFG)</label><span className="text-xs text-indigo-400 font-bold">{formData.guidance_scale}</span></div>
                     <input type="range" min="1" max="20" step="0.1" value={formData.guidance_scale} onChange={e => setFormData({...formData, guidance_scale: Number(e.target.value)})} className="w-full accent-indigo-500" />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase">Seed</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase">Seed / Kode Unik</label>
                     <div className="relative">
-                       <input type="number" value={formData.seed} onChange={e => setFormData({...formData, seed: e.target.value})} className="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-xs font-mono" />
-                       <button type="button" onClick={randomizeSeed} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-white/5"><Dice5 size={14} /></button>
+                       <input type="number" value={formData.seed} onChange={e => setFormData({...formData, seed: e.target.value})} className="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-xs font-mono" />
+                       <button type="button" onClick={randomizeSeed} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-white transition-colors"><Dice5 size={14} /></button>
                     </div>
                   </div>
                </div>
             </section>
 
             <section className="bg-white/[0.03] border border-white/10 rounded-[32px] p-8">
+               <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 bg-amber-600/20 rounded-2xl flex items-center justify-center text-amber-400"><Zap size={20}/></div>
+                  <h3 className="text-lg font-black uppercase tracking-tight">Business / <span className="text-slate-500">Bisnis</span></h3>
+               </div>
+
                <div className="space-y-6">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Category</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Category / Segmen</label>
                     <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-4 text-xs font-bold outline-none">
                         <option value="">Select Segment</option>
                         {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </div>
 
-                  <div className="flex gap-2">
-                    {RARITIES.map(r => (
-                        <button key={r} type="button" onClick={() => setFormData({...formData, rarity: r})} className={`flex-1 py-3 rounded-xl text-[10px] font-bold border ${formData.rarity === r ? 'bg-white text-black' : 'bg-slate-900 border-white/5 text-slate-600'}`}>{r}</button>
-                    ))}
+                  <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Rarity / Kelangkaan</label>
+                    <div className="flex gap-2">
+                        {RARITIES.map(r => (
+                            <button key={r} type="button" onClick={() => setFormData({...formData, rarity: r})} className={`flex-1 py-3 rounded-xl text-[10px] font-bold border transition-all ${formData.rarity === r ? 'bg-white text-black' : 'bg-slate-900 border-white/5 text-slate-600'}`}>{r}</button>
+                        ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-2xl border border-white/5">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase">Premium Content</label>
+                      <p className="text-[8px] text-slate-600 font-bold uppercase">Lock for Guest/Free</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData({...formData, is_premium: !formData.is_premium})}
+                      className={`w-12 h-6 rounded-full relative transition-colors ${formData.is_premium || formData.rarity !== 'Common' ? 'bg-indigo-600' : 'bg-slate-800'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.is_premium || formData.rarity !== 'Common' ? 'right-1' : 'left-1'}`} />
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                     <button type="button" onClick={() => setFormData({...formData, is_trending: !formData.is_trending})} className={`p-4 rounded-2xl border transition-all text-[10px] font-black uppercase ${formData.is_trending ? 'bg-amber-600/20 border-amber-500' : 'bg-slate-900 border-white/5 text-slate-700'}`}>Trending</button>
-                     <input type="number" placeholder="Rank (1-10)" value={formData.trending_rank} onChange={e => setFormData({...formData, trending_rank: e.target.value})} className="bg-slate-900 border border-white/5 rounded-2xl p-4 text-xs font-bold outline-none" />
+                     <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Trending Status</label>
+                        <button type="button" onClick={() => setFormData({...formData, is_trending: !formData.is_trending})} className={`w-full p-4 rounded-2xl border transition-all text-[10px] font-black uppercase flex items-center justify-center gap-2 ${formData.is_trending ? 'bg-amber-600/20 border-amber-500 text-amber-500' : 'bg-slate-900 border-white/5 text-slate-700'}`}>
+                           {formData.is_trending && <Sparkles size={12}/>} Trending
+                        </button>
+                     </div>
+                     <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase block mb-2">Rank (1-10)</label>
+                        <input type="number" placeholder="Rank" value={formData.trending_rank} onChange={e => setFormData({...formData, trending_rank: e.target.value})} className="w-full bg-slate-900 border border-white/5 rounded-2xl p-4 text-xs font-bold outline-none text-center" />
+                     </div>
                   </div>
                </div>
             </section>
 
-            <button disabled={loading} className={`w-full py-6 rounded-[32px] font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${success ? 'bg-green-600' : 'bg-indigo-600 hover:bg-indigo-500'} disabled:opacity-50`}>
+            <button 
+              disabled={loading} 
+              className={`w-full py-6 rounded-[32px] font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${success ? 'bg-green-600' : 'bg-indigo-600 hover:bg-indigo-500'} disabled:opacity-50 shadow-2xl shadow-indigo-600/20`}
+            >
                 {loading ? <Loader2 className="animate-spin" /> : (success ? <Check /> : <Sparkles size={20} />)}
-                {loading ? 'Processing...' : (success ? 'Published' : 'Publish Asset')}
+                {loading ? 'Processing...' : (success ? 'Published Successfully' : 'Publish Asset / Terbitkan')}
             </button>
           </div>
         </form>

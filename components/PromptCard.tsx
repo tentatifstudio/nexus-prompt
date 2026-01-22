@@ -1,8 +1,8 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-// Fix: Added Zap to the imported icons from lucide-react
-import { Copy, CheckCircle2, Bookmark, Star, Lock, Zap } from 'lucide-react';
+import { Bookmark, Star, Lock, Zap, Trash2 } from 'lucide-react';
 import { PromptItem } from '../types';
 import BeforeAfterSlider from './BeforeAfterSlider';
 import { useAuth } from '../context/AuthContext';
@@ -10,11 +10,15 @@ import { useAuth } from '../context/AuthContext';
 interface PromptCardProps {
   item: PromptItem;
   onClick: (item: PromptItem) => void;
-  isSaved: boolean;
-  onToggleSave: (id: string) => void;
+  isSaved?: boolean;
+  onToggleSave?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  showDelete?: boolean;
 }
 
-const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved, onToggleSave }) => {
+const PromptCard: React.FC<PromptCardProps> = ({ 
+  item, onClick, isSaved = false, onToggleSave, onDelete, showDelete
+}) => {
   const { user } = useAuth();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -22,8 +26,6 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved, onToggl
   const mouseY = useSpring(y, { stiffness: 100, damping: 20 });
   const rotateX = useTransform(mouseY, [-0.5, 0.5], [5, -5]);
   const rotateY = useTransform(mouseX, [-0.5, 0.5], [-5, 5]);
-  const sheenX = useTransform(mouseX, [-0.5, 0.5], [-20, 120]); 
-  const sheenY = useTransform(mouseY, [-0.5, 0.5], [-20, 120]);
 
   const isPremiumLocked = item.isPremium && user?.plan !== 'pro';
 
@@ -50,14 +52,33 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved, onToggl
         onMouseLeave={() => { x.set(0); y.set(0); }}
         onClick={() => onClick(item)}
       >
-        <div className="relative glass-card rounded-2xl overflow-hidden flex flex-col h-full transform transition-all duration-300 group-hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] bg-white/70">
-          <motion.div className="absolute inset-0 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden md:block"
-            style={{
-                background: `linear-gradient(125deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%)`,
-                backgroundSize: '200% 200%',
-                backgroundPositionX: sheenX, backgroundPositionY: sheenY,
-            }}
-          />
+        <div className="relative glass-card rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-300 group-hover:shadow-2xl bg-white/70">
+          
+          {/* USER ATTRIBUTION HEADER */}
+          <div className="px-4 py-3 flex items-center justify-between border-b border-slate-100/50">
+            <Link 
+              to={`/user/${item.user_id}`}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={item.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.user_id}`} 
+                className="w-6 h-6 rounded-full bg-slate-200 border border-slate-200" 
+                alt="avatar"
+              />
+              <span className="text-[10px] font-bold text-slate-700 truncate max-w-[100px]">
+                {item.profiles?.username || 'Explorer'}
+              </span>
+            </Link>
+            {showDelete && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); onDelete?.(item.id); }}
+                className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
 
           <div className="relative w-full aspect-[4/5] overflow-hidden bg-slate-100">
             <BeforeAfterSlider 
@@ -83,15 +104,13 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved, onToggl
                 <p className="text-[10px] font-medium text-slate-500">{item.model}</p>
              </div>
              <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100/50">
-                <div className="flex items-center gap-2">
-                   <div className="w-5 h-5 rounded-full bg-slate-200"></div>
-                   <span className="text-[9px] font-bold text-slate-400 uppercase">Nexus Archive</span>
-                </div>
-                 <div className="flex gap-2">
-                   <button onClick={(e) => { e.stopPropagation(); onToggleSave(item.id); }} className={`transition-colors ${isSaved ? 'text-indigo-600' : 'text-slate-300'}`}>
-                      <Bookmark size={14} fill={isSaved ? "currentColor" : "none"} />
-                   </button>
-                 </div>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.category}</span>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onToggleSave?.(item.id); }} 
+                  className={`transition-colors ${isSaved ? 'text-indigo-600' : 'text-slate-300 hover:text-indigo-400'}`}
+                >
+                  <Bookmark size={14} fill={isSaved ? "currentColor" : "none"} />
+                </button>
              </div>
           </div>
         </div>
