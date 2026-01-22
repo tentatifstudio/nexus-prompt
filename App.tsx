@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Loader2, Search, Shield, LogOut, PlusCircle, Settings as SettingsIcon, UserCircle } from 'lucide-react';
+import { Zap, Loader2, Search, Shield, LogOut, PlusCircle, Settings as SettingsIcon, UserCircle, Crown } from 'lucide-react';
 import { PromptItem } from './types.ts';
 import PromptCard from './components/PromptCard.tsx';
 import Modal from './components/Modal.tsx';
@@ -13,7 +13,7 @@ import PublicProfile from './pages/PublicProfile.tsx';
 import Settings from './pages/Settings.tsx';
 import TrendingRow from './components/TrendingRow.tsx';
 import SignInModal from './components/SignInModal.tsx';
-import PricingModal from './components/PricingModal.tsx';
+import UpgradeModal from './components/UpgradeModal.tsx'; // Import UpgradeModal
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { promptService } from './services/promptService.ts';
 import { useAuth } from './context/AuthContext.tsx';
@@ -114,13 +114,13 @@ function Home({ onSelectItem }: HomeProps) {
 }
 
 function App() {
-  const { user, logout, upgradeToPro, loading: authLoading } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PromptItem | null>(null);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -129,7 +129,6 @@ function App() {
   useEffect(() => {
     if (location.state?.triggerLogin) {
       setShowAuthModal(true);
-      // Clean up state to prevent modal from re-opening on every render
       window.history.replaceState({}, document.title);
     }
   }, [location]);
@@ -148,10 +147,20 @@ function App() {
           </Link>
           
           <div className="flex items-center gap-2 md:gap-4">
+             {/* Upgrade Pro Button for Free Users */}
+             {user && !user.is_pro && (
+               <button 
+                 onClick={() => setShowUpgradeModal(true)} 
+                 className="flex items-center gap-2 bg-amber-100 text-amber-700 border border-amber-200 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-amber-200 transition-all"
+               >
+                 <Crown size={14} className="animate-pulse" /> <span>Upgrade Pro</span>
+               </button>
+             )}
+
              {user && (
                <Link 
                  to="/create"
-                 className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 transition-all"
+                 className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-indigo-600 transition-all"
                >
                  <PlusCircle size={14} /> <span className="hidden sm:inline">Upload</span>
                </Link>
@@ -163,15 +172,21 @@ function App() {
 
              {user && (
                <div className="relative">
-                  <button onClick={() => setShowSettingsDropdown(!showSettingsDropdown)} className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm overflow-hidden ring-2 ring-transparent hover:ring-indigo-500 transition-all">
+                  <button onClick={() => setShowSettingsDropdown(!showSettingsDropdown)} className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm overflow-hidden ring-2 ring-transparent hover:ring-indigo-500 transition-all relative">
                      <img src={user.avatar} className="w-full h-full object-cover" alt="User Avatar" />
+                     {user.is_pro && <div className="absolute top-0 right-0 w-3 h-3 bg-amber-400 border-2 border-white rounded-full" />}
                   </button>
                   <AnimatePresence>
                     {showSettingsDropdown && (
                       <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:10 }} className="absolute right-0 mt-2 w-56 glass-panel rounded-[24px] p-2 shadow-2xl z-[100] border border-white/50 bg-white/95">
-                        <div className="px-4 py-3 border-b border-slate-100 mb-1">
-                           <p className="text-xs font-bold truncate">{user.name}</p>
-                           <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                        <div className="px-4 py-3 border-b border-slate-100 mb-1 flex justify-between items-center">
+                           <div className="overflow-hidden">
+                              <p className="text-xs font-bold truncate">{user.name}</p>
+                              <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                           </div>
+                           {user.is_pro && (
+                             <span className="shrink-0 bg-amber-400 text-slate-900 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">PRO</span>
+                           )}
                         </div>
                         <Link to={`/user/${user.id}`} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-xl transition-colors">
                           <UserCircle size={18} className="text-indigo-500" /> My Profile
@@ -215,10 +230,10 @@ function App() {
         isOpen={!!selectedItem} 
         onClose={() => setSelectedItem(null)} 
         onOpenAuth={() => setShowAuthModal(true)}
-        onOpenPricing={() => setShowPricingModal(true)}
+        onOpenPricing={() => setShowUpgradeModal(true)} // Link to UpgradeModal
       />
       <SignInModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} onUpgrade={upgradeToPro} />
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
     </div>
   );
 }
