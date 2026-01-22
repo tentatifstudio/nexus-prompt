@@ -16,8 +16,14 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  
+  // Before (Source) State
+  const [beforeFile, setBeforeFile] = useState<File | null>(null);
+  const [beforePreview, setBeforePreview] = useState<string | null>(null);
+  
+  // After (Result) State
+  const [afterFile, setAfterFile] = useState<File | null>(null);
+  const [afterPreview, setAfterPreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -38,39 +44,53 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
     fetchCats();
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'before' | 'after') => {
     const selected = e.target.files?.[0];
     if (selected) {
-      setFile(selected);
-      const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result as string);
-      reader.readAsDataURL(selected);
+      if (type === 'before') {
+        setBeforeFile(selected);
+        const reader = new FileReader();
+        reader.onloadend = () => setBeforePreview(reader.result as string);
+        reader.readAsDataURL(selected);
+      } else {
+        setAfterFile(selected);
+        const reader = new FileReader();
+        reader.onloadend = () => setAfterPreview(reader.result as string);
+        reader.readAsDataURL(selected);
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return alert("You must be logged in to post.");
-    if (!file) return alert("Please upload your result image.");
+    if (!afterFile) return alert("Please upload your result image (After).");
     if (!formData.category) return alert("Please select a category.");
 
     setLoading(true);
     try {
-      const imageUrl = await promptService.uploadImage(file);
-      if (!imageUrl) throw new Error("Upload failed");
+      // Upload images
+      const afterUrl = await promptService.uploadImage(afterFile);
+      if (!afterUrl) throw new Error("Result upload failed");
+
+      let beforeUrl = null;
+      if (beforeFile) {
+        beforeUrl = await promptService.uploadImage(beforeFile);
+      }
 
       await promptService.createPrompt({
         user_id: user.id,
         title: formData.title,
         prompt: formData.prompt,
-        image_result: imageUrl,
+        image_result: afterUrl,
+        image_source: beforeUrl,
         model: formData.model,
         category: formData.category,
         aspect_ratio: formData.aspect_ratio,
         seed: Number(formData.seed),
         guidance_scale: Number(formData.guidance_scale),
         description: formData.description,
-        type: 'TXT2IMG',
+        type: beforeUrl ? 'IMG2IMG' : 'TXT2IMG',
         rarity: 'Common',
         is_premium: false,
         is_trending: false
@@ -85,7 +105,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-8 px-4">
        <button onClick={onBack} className="mb-8 flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors group">
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           <span className="text-[10px] font-black uppercase tracking-widest">Back to Gallery</span>
@@ -96,21 +116,41 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
           <p className="text-slate-500 font-medium">Join the Nexus community and inspire other creators.</p>
        </div>
 
-       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <div className="space-y-8">
-             <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Upload Result</label>
-                <label className={`relative block aspect-[4/5] rounded-[32px] border-2 border-dashed transition-all overflow-hidden cursor-pointer ${preview ? 'border-transparent' : 'border-slate-200 hover:border-indigo-400 bg-slate-50'}`}>
-                   {preview ? (
-                     <img src={preview} className="w-full h-full object-cover" alt="Preview" />
-                   ) : (
-                     <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                        <ImageIcon size={32} className="mb-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Drop Image Here</span>
-                     </div>
-                   )}
-                   <input type="file" required className="hidden" onChange={handleFileChange} accept="image/*" />
-                </label>
+       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Visual Section */}
+          <div className="lg:col-span-7 space-y-8">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* BEFORE UPLOAD */}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Before / Source <span className="text-[8px] opacity-60">(Optional)</span></label>
+                  <label className={`relative block aspect-[4/5] rounded-[32px] border-2 border-dashed transition-all overflow-hidden cursor-pointer ${beforePreview ? 'border-transparent' : 'border-slate-200 hover:border-indigo-400 bg-slate-50'}`}>
+                     {beforePreview ? (
+                       <img src={beforePreview} className="w-full h-full object-cover" alt="Before Preview" />
+                     ) : (
+                       <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
+                          <ImageIcon size={32} className="mb-4" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">Initial Image</span>
+                       </div>
+                     )}
+                     <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'before')} accept="image/*" />
+                  </label>
+                </div>
+
+                {/* AFTER UPLOAD */}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block">After / Result <span className="text-[8px] opacity-60">(Required)</span></label>
+                  <label className={`relative block aspect-[4/5] rounded-[32px] border-2 border-dashed transition-all overflow-hidden cursor-pointer ${afterPreview ? 'border-transparent' : 'border-indigo-200 bg-indigo-50/30'}`}>
+                     {afterPreview ? (
+                       <img src={afterPreview} className="w-full h-full object-cover" alt="After Preview" />
+                     ) : (
+                       <div className="absolute inset-0 flex flex-col items-center justify-center text-indigo-300">
+                          <ImageIcon size={32} className="mb-4" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">Final Masterpiece</span>
+                       </div>
+                     )}
+                     <input type="file" required className="hidden" onChange={(e) => handleFileChange(e, 'after')} accept="image/*" />
+                  </label>
+                </div>
              </div>
 
              <div className="space-y-4">
@@ -124,7 +164,8 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
              </div>
           </div>
 
-          <div className="space-y-8">
+          {/* Details Section */}
+          <div className="lg:col-span-5 space-y-8">
              <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl space-y-6">
                 <div>
                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 flex items-center gap-2"><Type size={14}/> Asset Title</label>
