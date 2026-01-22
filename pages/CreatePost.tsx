@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Upload, ArrowLeft, Loader2, Sparkles, Image as ImageIcon, Sliders, Type, Terminal } from 'lucide-react';
+import { Upload, ArrowLeft, Loader2, Sparkles, Image as ImageIcon, Type, Terminal, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { promptService } from '../services/promptService';
 
@@ -10,18 +10,17 @@ interface CreatePostProps {
 }
 
 const MODELS = ['Flux', 'ImageFX', 'Midjourney', 'Stable Diffusion XL', 'DALL-E 3'];
-const ASPECT_RATIOS = ['1:1', '4:5', '16:9', '9:16', '2:3'];
 
 const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   
-  // Before (Source) State
+  // Before (Reference/Face) State
   const [beforeFile, setBeforeFile] = useState<File | null>(null);
   const [beforePreview, setBeforePreview] = useState<string | null>(null);
   
-  // After (Result) State
+  // After (Result/AI) State
   const [afterFile, setAfterFile] = useState<File | null>(null);
   const [afterPreview, setAfterPreview] = useState<string | null>(null);
   
@@ -69,7 +68,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
 
     setLoading(true);
     try {
-      // Upload images
       const afterUrl = await promptService.uploadImage(afterFile);
       if (!afterUrl) throw new Error("Result upload failed");
 
@@ -82,8 +80,8 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
         user_id: user.id,
         title: formData.title,
         prompt: formData.prompt,
-        image_result: afterUrl,
-        image_source: beforeUrl,
+        image_result_url: afterUrl, // Updated key
+        image_source_url: beforeUrl, // Updated key
         model: formData.model,
         category: formData.category,
         aspect_ratio: formData.aspect_ratio,
@@ -122,14 +120,17 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* BEFORE UPLOAD */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Before / Source <span className="text-[8px] opacity-60">(Optional)</span></label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Input 1: Face / Reference</label>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">Optional</span>
+                  </div>
                   <label className={`relative block aspect-[4/5] rounded-[32px] border-2 border-dashed transition-all overflow-hidden cursor-pointer ${beforePreview ? 'border-transparent' : 'border-slate-200 hover:border-indigo-400 bg-slate-50'}`}>
                      {beforePreview ? (
                        <img src={beforePreview} className="w-full h-full object-cover" alt="Before Preview" />
                      ) : (
                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
-                          <ImageIcon size={32} className="mb-4" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">Initial Image</span>
+                          <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4"><ImageIcon size={24} className="text-slate-300" /></div>
+                          <span className="text-[9px] font-black uppercase tracking-widest">Upload Original Photo</span>
                        </div>
                      )}
                      <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'before')} accept="image/*" />
@@ -138,14 +139,17 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
 
                 {/* AFTER UPLOAD */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block">After / Result <span className="text-[8px] opacity-60">(Required)</span></label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block">Input 2: AI Result</label>
+                    <span className="text-[8px] font-bold text-indigo-500 uppercase bg-indigo-50 px-2 py-0.5 rounded">Required</span>
+                  </div>
                   <label className={`relative block aspect-[4/5] rounded-[32px] border-2 border-dashed transition-all overflow-hidden cursor-pointer ${afterPreview ? 'border-transparent' : 'border-indigo-200 bg-indigo-50/30'}`}>
                      {afterPreview ? (
                        <img src={afterPreview} className="w-full h-full object-cover" alt="After Preview" />
                      ) : (
                        <div className="absolute inset-0 flex flex-col items-center justify-center text-indigo-300">
-                          <ImageIcon size={32} className="mb-4" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">Final Masterpiece</span>
+                          <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4"><Sparkles size={24} className="text-indigo-300" /></div>
+                          <span className="text-[9px] font-black uppercase tracking-widest">Upload AI Generated</span>
                        </div>
                      )}
                      <input type="file" required className="hidden" onChange={(e) => handleFileChange(e, 'after')} accept="image/*" />
@@ -158,7 +162,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
                 <textarea 
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
-                  placeholder="Tell us a bit about this image..."
+                  placeholder="Tell us a bit about this transformation..."
                   className="w-full h-32 p-6 rounded-3xl bg-white border border-slate-100 shadow-sm outline-none focus:ring-4 ring-indigo-500/5 transition-all text-sm font-medium"
                 />
              </div>
@@ -169,12 +173,12 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
              <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl space-y-6">
                 <div>
                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 flex items-center gap-2"><Type size={14}/> Asset Title</label>
-                   <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="e.g. Neon Samurai" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm font-bold" />
+                   <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="e.g. My AI Transformation" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm font-bold" />
                 </div>
 
                 <div>
                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 flex items-center gap-2"><Terminal size={14}/> The Prompt</label>
-                   <textarea required value={formData.prompt} onChange={e => setFormData({...formData, prompt: e.target.value})} placeholder="Paste your magic here..." className="w-full h-40 p-6 rounded-2xl bg-slate-900 text-indigo-300 font-mono text-xs leading-relaxed outline-none" />
+                   <textarea required value={formData.prompt} onChange={e => setFormData({...formData, prompt: e.target.value})} placeholder="Describe how you made this..." className="w-full h-40 p-6 rounded-2xl bg-slate-900 text-indigo-300 font-mono text-xs leading-relaxed outline-none" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -187,10 +191,17 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
                    <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Category</label>
                       <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-black uppercase outline-none">
-                         <option value="">Select</option>
+                         <option value="">Select Segment</option>
                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                    </div>
+                </div>
+
+                <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-start gap-3">
+                   <Info size={16} className="text-indigo-400 shrink-0 mt-0.5" />
+                   <p className="text-[10px] font-medium text-indigo-700 leading-relaxed">
+                     Assets with both images allow viewers to see the transformation magic!
+                   </p>
                 </div>
 
                 <button disabled={loading} type="submit" className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200">

@@ -94,8 +94,8 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack, onRefresh }) => {
       await promptService.createPrompt({
         title: formData.title,
         prompt: formData.prompt,
-        image_result: imageAfterUrl,
-        image_source: imageBeforeUrl,
+        image_result_url: imageAfterUrl,
+        image_source_url: imageBeforeUrl,
         model: formData.model,
         type: files.before ? 'IMG2IMG' : 'TXT2IMG',
         category: formData.category,
