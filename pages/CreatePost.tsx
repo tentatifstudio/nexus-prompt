@@ -14,6 +14,7 @@ const MODELS = ['Flux', 'ImageFX', 'Midjourney', 'Stable Diffusion XL', 'DALL-E 
 const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [catsLoading, setCatsLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   
   // Before (Reference/Face) State
@@ -37,8 +38,15 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
 
   useEffect(() => {
     const fetchCats = async () => {
-      const cats = await promptService.getCategories();
-      setCategories(cats);
+      setCatsLoading(true);
+      try {
+        const cats = await promptService.getCategories();
+        setCategories(cats || []);
+      } catch (err) {
+        console.error("Dropdown loading error:", err);
+      } finally {
+        setCatsLoading(false);
+      }
     };
     fetchCats();
   }, []);
@@ -80,8 +88,8 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
         user_id: user.id,
         title: formData.title,
         prompt: formData.prompt,
-        image_result_url: afterUrl, // Updated key
-        image_source_url: beforeUrl, // Updated key
+        image_result_url: afterUrl,
+        image_source_url: beforeUrl,
         model: formData.model,
         category: formData.category,
         aspect_ratio: formData.aspect_ratio,
@@ -190,8 +198,9 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
                    </div>
                    <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Category</label>
-                      <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-black uppercase outline-none">
-                         <option value="">Select Segment</option>
+                      <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-black uppercase outline-none disabled:opacity-50" disabled={catsLoading}>
+                         <option value="">{catsLoading ? 'Loading segments...' : 'Select Segment'}</option>
+                         {!catsLoading && categories.length === 0 && <option value="" disabled>No categories found</option>}
                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                    </div>

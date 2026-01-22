@@ -23,7 +23,7 @@ export const promptService = {
       isTrending: item.is_trending,
       trendingRank: item.trending_rank,
       category: item.category || 'General',
-      imageResult: item.image_result_url || item.image_result, // Fallback to old name if needed
+      imageResult: item.image_result_url || item.image_result, 
       imageSource: item.image_source_url || item.image_source,
       prompt: item.prompt,
       model: item.model,
@@ -94,11 +94,22 @@ export const promptService = {
   },
 
   getCategories: async (): Promise<string[]> => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('name')
-      .order('name', { ascending: true });
-    return (data || []).map(cat => cat.name);
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('name')
+        .order('name', { ascending: true });
+      
+      if (error) {
+        console.warn("Supabase category fetch error:", error.message);
+        return [];
+      }
+      
+      return (data || []).map(cat => cat.name);
+    } catch (e) {
+      console.error("Failed to fetch categories:", e);
+      return [];
+    }
   },
 
   uploadImage: async (file: File, bucket: string = 'images'): Promise<string | null> => {
