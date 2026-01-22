@@ -1,19 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Loader2, User, Camera, Zap, Terminal, FileText, CheckCircle } from 'lucide-react';
-import { promptService } from '../services/promptService';
+import { Camera, Loader2, Save, ArrowLeft, UserCircle, Shield, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { promptService } from '../services/promptService';
+import { useNavigate } from 'react-router-dom';
 
-const Settings: React.FC = () => {
-  const navigate = useNavigate();
+const Settings = () => {
   const { user, refreshUser } = useAuth();
-  
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     username: '',
@@ -22,15 +20,11 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      promptService.getProfile(user.id).then(profile => {
-        if (profile) {
-          setFormData({
-            username: profile.username || '',
-            bio: profile.bio || ''
-          });
-          setAvatarPreview(profile.avatar_url);
-        }
+      setFormData({
+        username: user.name || '',
+        bio: user.bio || ''
       });
+      setAvatarPreview(user.avatar);
     }
   }, [user]);
 
@@ -47,119 +41,113 @@ const Settings: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
     setLoading(true);
     try {
-      let avatarUrl = avatarPreview;
+      let finalAvatarUrl = user.avatar;
       if (avatarFile) {
-        const uploadedUrl = await promptService.uploadAvatar(avatarFile);
-        if (uploadedUrl) avatarUrl = uploadedUrl;
+        const uploadedUrl = await promptService.uploadImage(avatarFile, 'avatars');
+        if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
 
       await promptService.updateProfile(user.id, {
         username: formData.username,
         bio: formData.bio,
-        avatar_url: avatarUrl
+        avatar_url: finalAvatarUrl
       });
 
       await refreshUser();
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        navigate(`/user/${user.id}`);
-      }, 2000);
+      alert("Profile updated successfully!");
     } catch (err) {
-      console.error(err);
-      alert("Gagal memperbarui profil.");
+      alert("Failed to update profile.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!user) return null;
-
   return (
-    <div className="min-h-screen bg-slate-50 pt-24 pb-20 px-6">
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/50 bg-white/60 backdrop-blur-md">
-         <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="bg-slate-900 text-white p-1.5 rounded-lg"><Zap size={18} fill="currentColor" /></div>
-              <span className="font-bold text-lg tracking-tight">PROMPT<span className="font-light text-slate-500">NEXUS</span></span>
-            </Link>
-         </div>
-      </header>
+    <div className="max-w-2xl mx-auto py-12 px-6">
+       <button onClick={() => navigate(-1)} className="mb-12 flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors group">
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-widest">Profile Settings</span>
+       </button>
 
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center gap-4 mb-10">
-          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm">
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Settings Center</h1>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Configure your nexus identity</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          
-          {/* AVATAR UPLOAD SECTION */}
-          <div className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100 flex flex-col items-center">
-             <div className="relative group mb-6">
-                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[48px] overflow-hidden bg-slate-100 border-4 border-white shadow-2xl relative">
-                   {avatarPreview ? (
-                     <img src={avatarPreview} className="w-full h-full object-cover" />
-                   ) : (
-                     <div className="w-full h-full flex items-center justify-center text-slate-300"><User size={64}/></div>
-                   )}
-                   <label className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-[2px]">
-                      <Camera className="text-white" size={32} />
-                      <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
-                   </label>
+       <form onSubmit={handleSubmit} className="space-y-12">
+          {/* AVATAR SECTION */}
+          <section className="flex flex-col items-center text-center">
+             <div className="relative group cursor-pointer mb-6">
+                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[48px] bg-slate-100 overflow-hidden border-4 border-white shadow-2xl relative">
+                   <img src={avatarPreview || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`} className="w-full h-full object-cover" alt="Avatar" />
+                   <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <Camera size={24} />
+                   </div>
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-xl shadow-lg border-2 border-white"><Camera size={16}/></div>
+                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleAvatarChange} />
              </div>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Change Profile Identity</p>
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Profile Identity</p>
+          </section>
+
+          {/* BASIC INFO */}
+          <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl space-y-8">
+             <div className="flex items-center gap-3 mb-2">
+                <UserCircle size={20} className="text-indigo-500" />
+                <h3 className="text-lg font-black uppercase tracking-tight">Public Presence</h3>
+             </div>
+
+             <div className="space-y-6">
+                <div>
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Nexus Username</label>
+                   <input 
+                     required 
+                     value={formData.username} 
+                     onChange={e => setFormData({...formData, username: e.target.value})} 
+                     className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-bold text-sm"
+                     placeholder="Your unique handle"
+                   />
+                </div>
+                <div>
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Creative Bio</label>
+                   <textarea 
+                     value={formData.bio} 
+                     onChange={e => setFormData({...formData, bio: e.target.value})} 
+                     className="w-full h-32 px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-medium text-sm"
+                     placeholder="Tell the world who you are..."
+                   />
+                </div>
+             </div>
           </div>
 
-          {/* FIELDS SECTION */}
-          <div className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100 space-y-8">
-             <div>
-                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
-                  <Terminal size={14} className="text-indigo-500"/> Display Username
-                </label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="The Master Creator"
-                  className="w-full bg-slate-50 border-none rounded-2xl p-5 font-bold text-slate-800 outline-none focus:ring-4 ring-indigo-500/10 transition-all"
-                  value={formData.username}
-                  onChange={e => setFormData({...formData, username: e.target.value})}
-                />
+          {/* ACCOUNT TYPE */}
+          <div className="bg-slate-900 rounded-[32px] p-8 text-white space-y-6">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <Shield size={20} className="text-indigo-400" />
+                   <h3 className="text-lg font-black uppercase tracking-tight">Plan & Account</h3>
+                </div>
+                <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${user?.is_pro ? 'bg-amber-400 text-slate-900' : 'bg-slate-800 text-slate-400'}`}>
+                   {user?.plan} Membership
+                </span>
              </div>
-
-             <div>
-                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
-                  <FileText size={14} className="text-indigo-500"/> Creator Biography
-                </label>
-                <textarea 
-                  placeholder="Tell the community about your craft..."
-                  className="w-full bg-slate-50 border-none rounded-2xl p-5 font-medium text-sm h-32 outline-none focus:ring-4 ring-indigo-500/10 transition-all"
-                  value={formData.bio}
-                  onChange={e => setFormData({...formData, bio: e.target.value})}
-                />
+             <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-white"><CreditCard size={20}/></div>
+                   <div>
+                      <p className="text-xs font-bold">{user?.plan === 'pro' ? 'Unlimited Access Active' : 'Basic Member'}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">Synced with Nexus Registry</p>
+                   </div>
+                </div>
+                {!user?.is_pro && <button type="button" className="text-[10px] font-black uppercase text-indigo-400 hover:text-indigo-300">Upgrade</button>}
              </div>
           </div>
 
           <button 
+            disabled={loading} 
             type="submit" 
-            disabled={loading}
-            className={`w-full py-6 rounded-[32px] font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-2xl ${success ? 'bg-green-600' : 'bg-slate-900 hover:bg-indigo-600'} text-white disabled:opacity-50`}
+            className="w-full py-6 bg-slate-900 text-white rounded-[32px] font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all shadow-2xl shadow-slate-200"
           >
-            {loading ? <Loader2 className="animate-spin" /> : (success ? <CheckCircle /> : <Save size={20} />)}
-            {loading ? 'Synchronizing...' : (success ? 'Profile Updated' : 'Save Changes')}
+             {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+             {loading ? 'Saving Changes...' : 'Save Profile Identity'}
           </button>
-        </form>
-      </div>
+       </form>
     </div>
   );
 };

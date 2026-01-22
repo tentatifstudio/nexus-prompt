@@ -1,31 +1,26 @@
 
-export enum PromptCategory {
-  ALL = 'All',
-  TRENDING = 'Trending',
-  PREMIUM = 'Premium',
-  IMG2IMG = 'Image-to-Image',
-  TXT2IMG = 'Text-to-Image'
-}
-
 export type PromptType = 'IMG2IMG' | 'TXT2IMG';
 export type RarityType = 'Common' | 'Rare' | 'Legendary';
-
-export interface Profile {
-  id: string;
-  username: string;
-  avatar_url: string;
-}
 
 export interface User {
   id: string;
   name: string;
   avatar: string;
   email?: string;
+  bio?: string;
   plan: 'free' | 'pro';
+  is_pro?: boolean;
+}
+
+export interface AuthorInfo {
+  id: string;
+  username: string;
+  avatar_url: string;
 }
 
 export interface PromptItem {
   id: string;
+  user_id: string;
   title: string;
   type: PromptType;
   isPremium: boolean;
@@ -42,6 +37,5 @@ export interface PromptItem {
   guidanceScale: number;
   description?: string;
   date: string;
-  user_id?: string;
-  profiles?: Profile; // Relation to creator
+  author?: AuthorInfo;
 }

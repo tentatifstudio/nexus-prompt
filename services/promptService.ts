@@ -1,6 +1,6 @@
 
 import { supabase } from '../supabaseClient';
-import { PromptItem, PromptType, RarityType, Profile } from '../types';
+import { PromptItem, PromptType, RarityType } from '../types';
 
 export const promptService = {
   getAll: async (): Promise<PromptItem[]> => {
@@ -14,8 +14,9 @@ export const promptService = {
       return [];
     }
 
-    return data.map(item => ({
+    return (data || []).map(item => ({
       id: item.id,
+      user_id: item.user_id,
       title: item.title,
       type: item.type as PromptType,
       isPremium: item.is_premium,
@@ -32,8 +33,11 @@ export const promptService = {
       guidanceScale: item.guidance_scale || 7.5,
       description: item.description,
       date: item.created_at,
-      user_id: item.user_id,
-      profiles: item.profiles
+      author: item.profiles ? {
+        id: item.profiles.id,
+        username: item.profiles.username || 'Unknown Creator',
+        avatar_url: item.profiles.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.profiles.id}`
+      } : undefined
     }));
   },
 
@@ -45,9 +49,9 @@ export const promptService = {
       .order('created_at', { ascending: false });
 
     if (error) return [];
-    
-    return data.map(item => ({
+    return (data || []).map(item => ({
       id: item.id,
+      user_id: item.user_id,
       title: item.title,
       type: item.type as PromptType,
       isPremium: item.is_premium,
@@ -63,19 +67,22 @@ export const promptService = {
       guidanceScale: item.guidance_scale || 7.5,
       description: item.description,
       date: item.created_at,
-      user_id: item.user_id,
-      profiles: item.profiles
+      author: item.profiles ? {
+        id: item.profiles.id,
+        username: item.profiles.username,
+        avatar_url: item.profiles.avatar_url
+      } : undefined
     }));
   },
 
-  getProfile: async (userId: string): Promise<any | null> => {
+  getProfile: async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
-    
-    return error ? null : data;
+    if (error) return null;
+    return data;
   },
 
   updateProfile: async (userId: string, updates: any) => {
@@ -83,24 +90,7 @@ export const promptService = {
       .from('profiles')
       .update(updates)
       .eq('id', userId);
-    
     if (error) throw error;
-  },
-
-  uploadAvatar: async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file);
-
-    if (uploadError) return null;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
   },
 
   getCategories: async (): Promise<string[]> => {
@@ -108,21 +98,20 @@ export const promptService = {
       .from('categories')
       .select('name')
       .order('name', { ascending: true });
-
-    return error ? [] : data.map(cat => cat.name);
+    return (data || []).map(cat => cat.name);
   },
 
-  uploadImage: async (file: File): Promise<string | null> => {
+  uploadImage: async (file: File, bucket: string = 'images'): Promise<string | null> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     const { error: uploadError } = await supabase.storage
-      .from('images')
+      .from(bucket)
       .upload(fileName, file);
 
     if (uploadError) return null;
 
     const { data: { publicUrl } } = supabase.storage
-      .from('images')
+      .from(bucket)
       .getPublicUrl(fileName);
 
     return publicUrl;
@@ -133,18 +122,12 @@ export const promptService = {
       .from('prompts')
       .insert([promptData])
       .select();
-
     if (error) throw error;
     return data;
   },
 
-  deletePrompt: async (id: string, userId: string) => {
-    const { error } = await supabase
-      .from('prompts')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', userId);
-    
+  deletePrompt: async (id: string) => {
+    const { error } = await supabase.from('prompts').delete().eq('id', id);
     if (error) throw error;
   }
 };

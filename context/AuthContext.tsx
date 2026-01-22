@@ -22,11 +22,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, avatar_url, is_pro')
+        .select('*')
         .eq('id', userId)
         .single();
       
-      return data || null;
+      if (error) throw error;
+      return data;
     } catch (err) {
       return null;
     }
@@ -36,37 +37,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const profile = await fetchProfile(sbUser.id);
     return {
       id: sbUser.id,
-      name: profile?.username || sbUser.user_metadata.full_name || sbUser.email?.split('@')[0],
+      name: profile?.username || sbUser.user_metadata.full_name || sbUser.email?.split('@')[0] || 'Explorer',
       avatar: profile?.avatar_url || sbUser.user_metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sbUser.id}`,
       email: sbUser.email,
-      plan: profile?.is_pro ? 'pro' : 'free'
+      bio: profile?.bio,
+      plan: profile?.is_pro ? 'pro' : 'free',
+      is_pro: profile?.is_pro
     };
   };
 
   const refreshUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      setUser(await mapSupabaseUser(session.user));
+      const mappedUser = await mapSupabaseUser(session.user);
+      setUser(mappedUser);
     }
   };
 
   useEffect(() => {
     const initAuth = async () => {
+      setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        setUser(await mapSupabaseUser(session.user));
+        const mappedUser = await mapSupabaseUser(session.user);
+        setUser(mappedUser);
       }
       setLoading(false);
     };
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        setUser(await mapSupabaseUser(session.user));
+        const mappedUser = await mapSupabaseUser(session.user);
+        setUser(mappedUser);
       } else {
         setUser(null);
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -75,16 +83,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin }
+      options: {
+        redirectTo: window.location.origin,
+      }
     });
     if (error) throw error;
   };
 
   const upgradeToPro = async () => {
     if (!user) return;
-    const { error } = await supabase.from('profiles').update({ is_pro: true }).eq('id', user.id);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_pro: true })
+      .eq('id', user.id);
     if (error) throw error;
-    setUser(prev => prev ? { ...prev, plan: 'pro' } : null);
+    await refreshUser();
   };
 
   const logout = async () => {

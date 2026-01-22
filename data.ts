@@ -4,12 +4,12 @@ import { PromptItem } from './types';
 export const PROMPT_DATA: PromptItem[] = [
   {
     id: '1',
+    // Fix: Added missing required property user_id
+    user_id: 'admin_1',
     title: 'Cyberpunk Street Sketch',
     type: 'IMG2IMG',
     isPremium: false,
-    // Fix: Added missing required property isTrending
     isTrending: true,
-    // Fix: Added missing required property category
     category: 'Cyberpunk',
     imageSource: 'https://picsum.photos/id/122/800/1000?grayscale&blur=2', 
     imageResult: 'https://picsum.photos/id/122/800/1000',
@@ -24,12 +24,12 @@ export const PROMPT_DATA: PromptItem[] = [
   },
   {
     id: '2',
+    // Fix: Added missing required property user_id
+    user_id: 'admin_1',
     title: 'Ethereal Forest Spirit',
     type: 'TXT2IMG',
     isPremium: false,
-    // Fix: Added missing required property isTrending
     isTrending: false,
-    // Fix: Added missing required property category
     category: 'Illustration',
     imageSource: 'https://picsum.photos/id/28/800/1000?blur=10',
     imageResult: 'https://picsum.photos/id/28/800/1000',
@@ -44,12 +44,12 @@ export const PROMPT_DATA: PromptItem[] = [
   },
   {
     id: '3',
+    // Fix: Added missing required property user_id
+    user_id: 'admin_1',
     title: 'Exclusive: Marble Greek God',
     type: 'TXT2IMG',
     isPremium: true,
-    // Fix: Added missing required property isTrending
     isTrending: true,
-    // Fix: Added missing required property category
     category: '3D Render',
     imageSource: 'https://picsum.photos/id/582/800/1200?blur=10',
     imageResult: 'https://picsum.photos/id/582/800/1200',
@@ -64,12 +64,12 @@ export const PROMPT_DATA: PromptItem[] = [
   },
   {
     id: '4',
+    // Fix: Added missing required property user_id
+    user_id: 'admin_1',
     title: 'Vintage Car Restoration',
     type: 'IMG2IMG',
     isPremium: true,
-    // Fix: Added missing required property isTrending
     isTrending: false,
-    // Fix: Added missing required property category
     category: 'Photography',
     imageSource: 'https://picsum.photos/id/111/800/600?blur=5&grayscale',
     imageResult: 'https://picsum.photos/id/111/800/600',
@@ -84,12 +84,12 @@ export const PROMPT_DATA: PromptItem[] = [
   },
    {
     id: '5',
+    // Fix: Added missing required property user_id
+    user_id: 'admin_1',
     title: 'Abstract Fluid Simulation',
     type: 'TXT2IMG',
     isPremium: false,
-    // Fix: Added missing required property isTrending
     isTrending: false,
-    // Fix: Added missing required property category
     category: '3D Render',
     imageSource: 'https://picsum.photos/id/88/800/800?blur=8',
     imageResult: 'https://picsum.photos/id/88/800/800',
@@ -103,12 +103,12 @@ export const PROMPT_DATA: PromptItem[] = [
   },
   {
     id: '6',
+    // Fix: Added missing required property user_id
+    user_id: 'admin_1',
     title: 'Neon Tokyo Drift',
     type: 'IMG2IMG',
     isPremium: true,
-    // Fix: Added missing required property isTrending
     isTrending: true,
-    // Fix: Added missing required property category
     category: 'Cyberpunk',
     imageSource: 'https://picsum.photos/id/132/800/1000?grayscale',
     imageResult: 'https://picsum.photos/id/132/800/1000',
@@ -123,12 +123,12 @@ export const PROMPT_DATA: PromptItem[] = [
   },
   {
     id: '7',
+    // Fix: Added missing required property user_id
+    user_id: 'admin_1',
     title: 'Medieval Castle',
     type: 'TXT2IMG',
     isPremium: false,
-    // Fix: Added missing required property isTrending
     isTrending: false,
-    // Fix: Added missing required property category
     category: 'Illustration',
     imageSource: 'https://picsum.photos/id/238/800/1000?blur=10',
     imageResult: 'https://picsum.photos/id/238/800/1000',
@@ -142,12 +142,12 @@ export const PROMPT_DATA: PromptItem[] = [
   },
   {
     id: '8',
+    // Fix: Added missing required property user_id
+    user_id: 'admin_1',
     title: 'Deep Sea Creature',
     type: 'TXT2IMG',
     isPremium: false,
-    // Fix: Added missing required property isTrending
     isTrending: false,
-    // Fix: Added missing required property category
     category: 'Realistic',
     imageSource: 'https://picsum.photos/id/217/800/1000?blur=10',
     imageResult: 'https://picsum.photos/id/217/800/1000',
