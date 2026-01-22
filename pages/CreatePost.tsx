@@ -45,6 +45,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
       } catch (err) {
         console.error("Dropdown loading error:", err);
       } finally {
+        // ALWAYS stop loading state to avoid infinite spinners
         setCatsLoading(false);
       }
     };

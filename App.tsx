@@ -14,6 +14,7 @@ import Settings from './pages/Settings.tsx';
 import TrendingRow from './components/TrendingRow.tsx';
 import SignInModal from './components/SignInModal.tsx';
 import PricingModal from './components/PricingModal.tsx';
+import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { promptService } from './services/promptService.ts';
 import { useAuth } from './context/AuthContext.tsx';
 
@@ -63,6 +64,7 @@ function Home({ onSelectItem }: HomeProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+        <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Initializing Gallery...</p>
       </div>
     );
   }
@@ -123,6 +125,15 @@ function App() {
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
+  // Handle automatic login modal opening when redirected from ProtectedRoute
+  useEffect(() => {
+    if (location.state?.triggerLogin) {
+      setShowAuthModal(true);
+      // Clean up state to prevent modal from re-opening on every render
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   useEffect(() => {
     setShowSettingsDropdown(false);
   }, [location.pathname]);
@@ -146,7 +157,7 @@ function App() {
                </Link>
              )}
              
-             {!user && (
+             {!user && !authLoading && (
                <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Sign In</button>
              )}
 
@@ -186,14 +197,14 @@ function App() {
       </header>
 
       <div className="relative z-10 max-w-[1600px] mx-auto px-6 pt-28">
-        {authLoading ? (
+        {authLoading && location.pathname === '/' ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh]"><Loader2 className="w-12 h-12 text-indigo-600 animate-spin" /></div>
         ) : (
           <Routes>
             <Route path="/" element={<Home onSelectItem={setSelectedItem} />} />
             <Route path="/user/:userId" element={<PublicProfile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/create" element={<CreatePost onBack={() => navigate(-1)} onSuccess={() => navigate('/')} />} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/create" element={<ProtectedRoute><CreatePost onBack={() => navigate(-1)} onSuccess={() => navigate('/')} /></ProtectedRoute>} />
             <Route path="/admin" element={isAdmin ? <AdminPage onBack={() => navigate('/')} onRefresh={() => window.location.reload()} /> : <Home onSelectItem={setSelectedItem} />} />
           </Routes>
         )}
