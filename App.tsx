@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,11 +31,15 @@ function Home({ onSelectItem }: HomeProps) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // INDEPENDENT FETCH: Runs immediately on mount without waiting for auth
   useEffect(() => {
     let isMounted = true;
-    const loadData = async () => {
+    
+    const loadGalleryData = async () => {
+      // Start loading
       setDataLoading(true);
       setError(null);
+      
       try {
         const [promptsData, catsData] = await Promise.all([
           promptService.getAll(),
@@ -47,18 +50,21 @@ function Home({ onSelectItem }: HomeProps) {
           setPrompts(promptsData || []);
           setCategories(['All', ...(catsData || [])]);
         }
-      } catch (err) {
-        console.error("Gallery fetch failed:", err);
+      } catch (err: any) {
+        console.error("Gallery Initialization Error:", err);
         if (isMounted) {
-          setError("Failed to load archive. Please refresh.");
+          setError(err.message || "Archive data corrupted. Please refresh.");
         }
       } finally {
+        // GUARANTEED FINALLY: Stops the spinner no matter what
         if (isMounted) {
           setDataLoading(false);
         }
       }
     };
-    loadData();
+
+    loadGalleryData();
+    
     return () => { isMounted = false; };
   }, []);
 

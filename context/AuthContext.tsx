@@ -22,9 +22,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const fetchProfileAndMap = async (sbUser: any): Promise<User> => {
     let isPro = false;
-    // Hierarchical fallback for username
     let username = sbUser.user_metadata?.full_name || sbUser.user_metadata?.username || sbUser.email?.split('@')[0] || 'Member';
-    // Hierarchical fallback for avatar
     let avatarUrl = sbUser.user_metadata?.avatar_url || `${DEFAULT_AVATAR_BASE}${username}`;
     let bio = '';
 
@@ -42,7 +40,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         bio = profile.bio || '';
       }
     } catch (err) {
-      console.warn("AuthContext: Profile fetch failed, using fallbacks from metadata/defaults.");
+      console.warn("AuthContext: Profile fetch failed, using fallbacks.");
     }
 
     return {
@@ -58,7 +56,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const initAuth = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      
       if (session?.user) {
         const mappedUser = await fetchProfileAndMap(session.user);
         setUser(mappedUser);
@@ -69,6 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error("AuthContext Init Error:", err);
       setUser(null);
     } finally {
+      // CRITICAL: Always release loading state
       setLoading(false);
     }
   };
@@ -96,11 +97,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const mappedUser = await fetchProfileAndMap(session.user);
             setUser(mappedUser);
           }
+        } catch (err) {
+          console.error("Auth Change Error:", err);
         } finally {
           setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        setLoading(false);
+      } else {
+        // Handle other events like INITIAL_SESSION
         setLoading(false);
       }
     });
@@ -127,7 +133,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         options: {
           data: {
             full_name: username,
-            username: username, // Adding both just in case the trigger looks for either
+            username: username,
             avatar_url: `${DEFAULT_AVATAR_BASE}${username}`,
           }
         }
@@ -140,6 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const upgradeToPro = async () => {
     if (!user) return;
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('profiles')
@@ -150,6 +157,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.error("Upgrade error:", err);
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 

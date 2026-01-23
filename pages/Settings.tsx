@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Camera, Loader2, Save, ArrowLeft, UserCircle, Shield, CreditCard } from 'lucide-react';
@@ -41,25 +40,34 @@ const Settings = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    
     setLoading(true);
+    
     try {
       let finalAvatarUrl = user.avatar;
+      
+      // Upload avatar if changed
       if (avatarFile) {
         const uploadedUrl = await promptService.uploadImage(avatarFile, 'avatars');
         if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
 
+      // Update core profile data
       await promptService.updateProfile(user.id, {
         username: formData.username,
         bio: formData.bio,
         avatar_url: finalAvatarUrl
       });
 
+      // Synchronize with AuthContext
       await refreshUser();
-      alert("Profile updated successfully!");
-    } catch (err) {
-      alert("Failed to update profile.");
+      
+      alert("Profile Identity successfully updated in the Nexus Registry!");
+    } catch (err: any) {
+      console.error("Profile update error:", err);
+      alert("Nexus Registry update failed: " + (err.message || "Unknown communication error."));
     } finally {
+      // CRITICAL: Always release loading state to prevent infinite spinner
       setLoading(false);
     }
   };
@@ -76,7 +84,7 @@ const Settings = () => {
           <section className="flex flex-col items-center text-center">
              <div className="relative group cursor-pointer mb-6">
                 <div className="w-32 h-32 md:w-40 md:h-40 rounded-[48px] bg-slate-100 overflow-hidden border-4 border-white shadow-2xl relative">
-                   <img src={avatarPreview || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`} className="w-full h-full object-cover" alt="Avatar" />
+                   <img src={avatarPreview || `https://ui-avatars.com/api/?background=random&color=fff&name=${user?.name || 'U'}`} className="w-full h-full object-cover" alt="Avatar" />
                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
                       <Camera size={24} />
                    </div>
