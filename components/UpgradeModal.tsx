@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Zap, Star, Loader2, MessageSquare, ShieldCheck, CreditCard, Copy } from 'lucide-react';
+import { X, Check, Zap, Star, Loader2, MessageSquare, ShieldCheck, CreditCard, Copy, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useMeteredAccess } from '../hooks/useMeteredAccess';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -11,17 +12,20 @@ interface UpgradeModalProps {
 
 const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose }) => {
   const { user, upgradeToPro } = useAuth();
+  const { remaining } = useMeteredAccess();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [copied, setCopied] = useState(false);
   
+  const isLimitReached = remaining === 0;
+  
   // WhatsApp Configuration
-  const WA_ADMIN_NUMBER = "6281234567890"; // Nomor Admin Wahyu
+  const WA_ADMIN_NUMBER = "6281234567890";
   const WA_MESSAGE = encodeURIComponent(`Halo Admin, saya mau upgrade Pro. Email saya: ${user?.email || 'User Nexus'}`);
   const WA_URL = `https://wa.me/${WA_ADMIN_NUMBER}?text=${WA_MESSAGE}`;
 
   const benefits = [
+    { title: "Buka Semua Limit Harian", desc: "Tidak ada lagi batas 3 kali lihat. Bebas eksplorasi selamanya." },
     { title: "Akses Prompt 'Legendary' & 'Rare'", desc: "Buka semua library eksklusif tanpa batas." },
-    { title: "Lihat Prompt Tanpa Sensor", desc: "No blur, semua parameter teknis terlihat jelas." },
     { title: "Copy-Paste Sekali Klik", desc: "Langsung salin prompt ke AI generator Anda." },
     { title: "Support Local Creators", desc: "Kontribusi Anda membantu ekosistem kreator." }
   ];
@@ -73,10 +77,25 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose }) => {
               {/* LEFT: BENEFITS */}
               <div className="w-full md:w-[55%] p-10 md:p-14 border-r border-slate-100">
                 <div className="mb-10">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                    <Zap size={12} fill="currentColor" /> Premium Access
-                  </div>
-                  <h3 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">Unlock Unlimited <br/><span className="text-indigo-600">Creative Power 🚀</span></h3>
+                  {isLimitReached ? (
+                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-red-100 animate-pulse">
+                        <AlertCircle size={12} /> Limit Tercapai
+                     </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+                      <Zap size={12} fill="currentColor" /> Premium Access
+                    </div>
+                  )}
+                  
+                  <h3 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">
+                    {isLimitReached ? "Batas Gratis Habis!" : "Unlock Unlimited"} <br/>
+                    <span className="text-indigo-600">{isLimitReached ? "Waktunya Menjadi PRO 🚀" : "Creative Power 🚀"}</span>
+                  </h3>
+                  {isLimitReached && (
+                    <p className="mt-4 text-xs font-medium text-slate-500 leading-relaxed">
+                       Anda telah menggunakan 3 kuota reveal gratis hari ini. Upgrade ke PRO untuk membuka akses tak terbatas ke seluruh archive kami.
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-6 mb-10">

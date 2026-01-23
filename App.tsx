@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,9 +10,9 @@ import AdminPage from './components/AdminPage.tsx';
 import CreatePost from './pages/CreatePost.tsx';
 import PublicProfile from './pages/PublicProfile.tsx';
 import Settings from './pages/Settings.tsx';
+import Login from './pages/Login.tsx';
 import TrendingRow from './components/TrendingRow.tsx';
-import SignInModal from './components/SignInModal.tsx';
-import UpgradeModal from './components/UpgradeModal.tsx'; // Import UpgradeModal
+import UpgradeModal from './components/UpgradeModal.tsx';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import { promptService } from './services/promptService.ts';
 import { useAuth } from './context/AuthContext.tsx';
@@ -119,19 +118,10 @@ function App() {
   const location = useLocation();
   
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PromptItem | null>(null);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
-
-  // Handle automatic login modal opening when redirected from ProtectedRoute
-  useEffect(() => {
-    if (location.state?.triggerLogin) {
-      setShowAuthModal(true);
-      window.history.replaceState({}, document.title);
-    }
-  }, [location]);
 
   useEffect(() => {
     setShowSettingsDropdown(false);
@@ -147,7 +137,6 @@ function App() {
           </Link>
           
           <div className="flex items-center gap-2 md:gap-4">
-             {/* Upgrade Pro Button for Free Users */}
              {user && !user.is_pro && (
                <button 
                  onClick={() => setShowUpgradeModal(true)} 
@@ -167,7 +156,7 @@ function App() {
              )}
              
              {!user && !authLoading && (
-               <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Sign In</button>
+               <Link to="/login" className="px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Sign In</Link>
              )}
 
              {user && (
@@ -218,27 +207,23 @@ function App() {
       </header>
 
       <div className="relative z-10 max-w-[1600px] mx-auto px-6 pt-28">
-        {authLoading && location.pathname === '/' ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh]"><Loader2 className="w-12 h-12 text-indigo-600 animate-spin" /></div>
-        ) : (
-          <Routes>
-            <Route path="/" element={<Home onSelectItem={setSelectedItem} />} />
-            <Route path="/user/:userId" element={<PublicProfile />} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/create" element={<ProtectedRoute><CreatePost onBack={() => navigate(-1)} onSuccess={() => navigate('/')} /></ProtectedRoute>} />
-            <Route path="/admin" element={isAdmin ? <AdminPage onBack={() => navigate('/')} onRefresh={() => window.location.reload()} /> : <Home onSelectItem={setSelectedItem} />} />
-          </Routes>
-        )}
+        <Routes>
+          <Route path="/" element={<Home onSelectItem={setSelectedItem} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/user/:userId" element={<PublicProfile />} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/create" element={<ProtectedRoute><CreatePost onBack={() => navigate(-1)} onSuccess={() => navigate('/')} /></ProtectedRoute>} />
+          <Route path="/admin" element={isAdmin ? <AdminPage onBack={() => navigate('/')} onRefresh={() => window.location.reload()} /> : <Home onSelectItem={setSelectedItem} />} />
+        </Routes>
       </div>
 
       <Modal 
         item={selectedItem} 
         isOpen={!!selectedItem} 
         onClose={() => setSelectedItem(null)} 
-        onOpenAuth={() => setShowAuthModal(true)}
-        onOpenPricing={() => setShowUpgradeModal(true)} // Link to UpgradeModal
+        onOpenAuth={() => navigate('/login')}
+        onOpenPricing={() => setShowUpgradeModal(true)}
       />
-      <SignInModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
     </div>
   );

@@ -5,7 +5,8 @@ import { User } from '../types.ts';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, username: string) => Promise<void>;
   logout: () => Promise<void>;
   upgradeToPro: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -13,17 +14,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=nexus";
+const DEFAULT_AVATAR_BASE = "https://ui-avatars.com/api/?background=random&color=fff&name=";
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfileAndMap = async (sbUser: any): Promise<User> => {
-    // Default fallback values
     let isPro = false;
-    let username = sbUser.user_metadata?.full_name || sbUser.email?.split('@')[0] || 'Member';
-    let avatarUrl = sbUser.user_metadata?.avatar_url || DEFAULT_AVATAR;
+    // Hierarchical fallback for username
+    let username = sbUser.user_metadata?.full_name || sbUser.user_metadata?.username || sbUser.email?.split('@')[0] || 'Member';
+    // Hierarchical fallback for avatar
+    let avatarUrl = sbUser.user_metadata?.avatar_url || `${DEFAULT_AVATAR_BASE}${username}`;
     let bio = '';
 
     try {
@@ -40,7 +42,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         bio = profile.bio || '';
       }
     } catch (err) {
-      console.warn("AuthContext: Profile fetch failed, using fallbacks.");
+      console.warn("AuthContext: Profile fetch failed, using fallbacks from metadata/defaults.");
     }
 
     return {
@@ -106,20 +108,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithEmail = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string, username: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
-          redirectTo: window.location.origin,
+          data: {
+            full_name: username,
+            username: username, // Adding both just in case the trigger looks for either
+            avatar_url: `${DEFAULT_AVATAR_BASE}${username}`,
+          }
         }
       });
       if (error) throw error;
-    } catch (err) {
-      console.error("Google Sign-in Error:", err);
+    } finally {
       setLoading(false);
-      throw err;
     }
   };
 
@@ -149,7 +164,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout, upgradeToPro, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, signInWithEmail, signUpWithEmail, logout, upgradeToPro, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

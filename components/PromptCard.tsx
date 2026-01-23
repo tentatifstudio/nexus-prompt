@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
@@ -54,6 +53,9 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
   const isPremiumLocked = item.isPremium && user?.plan !== 'pro';
   const hasReference = !!item.imageSource;
 
+  const authorName = item.author?.username || 'Creator';
+  const authorAvatar = item.author?.avatar_url || `https://ui-avatars.com/api/?name=${authorName}&background=random&color=fff`;
+
   const rarityColors: Record<string, string> = {
     Common: 'bg-slate-500',
     Rare: 'bg-indigo-600',
@@ -94,9 +96,9 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
            >
               <div className="w-7 h-7 rounded-full bg-slate-200 overflow-hidden border border-white shadow-sm ring-1 ring-slate-100">
-                 <img src={item.author?.avatar_url} className="w-full h-full object-cover" alt="Author" />
+                 <img src={authorAvatar} className="w-full h-full object-cover" alt={authorName} />
               </div>
-              <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{item.author?.username || 'Creator'}</span>
+              <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{authorName}</span>
            </Link>
            <button onClick={(e) => { e.stopPropagation(); onToggleSave?.(item.id); }} className={`transition-all hover:scale-110 active:scale-90 ${isSaved ? 'text-indigo-600' : 'text-slate-300'}`}>
               <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />

@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Share2, CheckCircle2, Play, Terminal, Lock, Zap, LogIn, Crown } from 'lucide-react';
+import { X, Copy, Share2, CheckCircle2, Play, Terminal, Lock, Zap, LogIn, Crown, Eye } from 'lucide-react';
 import { PromptItem } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useMeteredAccess } from '../hooks/useMeteredAccess';
 
 interface ModalProps {
   item: PromptItem | null;
@@ -15,29 +17,49 @@ interface ModalProps {
 
 const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpenPricing }) => {
   const { user } = useAuth();
-  const [copied, setCopied] = React.useState(false);
+  const navigate = useNavigate();
+  const { remaining, hasRemaining, increment } = useMeteredAccess();
+  
+  const [copied, setCopied] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(false);
 
   if (!item) return null;
 
   const isGuest = !user;
-  const isFreeUser = user?.plan === 'free';
-  const isLocked = isGuest || (isFreeUser && item.isPremium);
+  const isPro = user?.is_pro;
+  const isFreeUser = user && !isPro;
+  
+  // Logic: Pro users see everything. Guest/Free see blur unless they reveal.
+  const needsLock = isGuest || (isFreeUser && item.isPremium);
+  const isActuallyLocked = needsLock && !isRevealed && !isPro;
   
   const handleCopy = () => {
-    if (isLocked) {
-      if (isGuest) onOpenAuth?.();
-      else onOpenPricing?.();
-      return;
-    }
+    if (isActuallyLocked) return;
     navigator.clipboard.writeText(item.prompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleReveal = () => {
+    if (isPro) {
+      setIsRevealed(true);
+      return;
+    }
+
+    if (hasRemaining) {
+      increment();
+      setIsRevealed(true);
+    } else {
+      onClose();
+      onOpenPricing?.();
+    }
+  };
+
   const getLockMessage = () => {
-    if (isGuest) return "Login untuk melihat prompt rahasia ini.";
-    if (isFreeUser && item.isPremium) return `Dapatkan Akses Pro untuk melihat prompt ${item.rarity} ini.`;
-    return "";
+    if (!hasRemaining) return "Quota Habis! Upgrade ke Pro untuk akses tak terbatas.";
+    if (isGuest) return "Gunakan 1 kuota gratis untuk melihat prompt ini.";
+    if (isFreeUser && item.isPremium) return "Prompt Premium! Gunakan kuota untuk reveal.";
+    return "Click reveal to see prompt settings.";
   };
 
   return (
@@ -100,22 +122,29 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
                     </h3>
                     
                     <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white group/prompt">
-                      <div className={`p-6 font-mono text-xs leading-relaxed text-slate-700 transition-all duration-700 ${isLocked ? 'blur-md select-none grayscale opacity-30' : ''}`}>
+                      <div className={`p-6 font-mono text-xs leading-relaxed text-slate-700 transition-all duration-700 ${isActuallyLocked ? 'blur-md select-none grayscale opacity-30' : ''}`}>
                         {item.prompt}
                       </div>
                       
-                      {isLocked && (
+                      {isActuallyLocked && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/20 backdrop-blur-[2px] p-6 text-center">
                            <div className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-slate-400 mb-4 border border-slate-100">
                              <Lock size={20} />
                            </div>
-                           <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest px-4 leading-relaxed max-w-[240px]">
+                           <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest px-4 leading-relaxed max-w-[240px] mb-6">
                              {getLockMessage()}
                            </p>
+                           
+                           <button 
+                             onClick={handleReveal}
+                             className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-600 transition-all shadow-lg"
+                           >
+                             <Eye size={14} /> Reveal Prompt ({remaining}/3 Left)
+                           </button>
                         </div>
                       )}
 
-                      {!isLocked && (
+                      {!isActuallyLocked && (
                         <button 
                           onClick={handleCopy}
                           className="absolute top-3 right-3 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
@@ -127,7 +156,7 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 mb-6 relative">
-                    <div className={isLocked ? 'blur-sm opacity-40 select-none' : ''}>
+                    <div className={isActuallyLocked ? 'blur-sm opacity-40 select-none' : ''}>
                       <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Seed</p>
                       <p className="text-xs font-bold text-slate-800 font-mono">{item.seed}</p>
                     </div>
@@ -135,7 +164,7 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
                       <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Aspect Ratio</p>
                       <p className="text-xs font-bold text-slate-800">{item.aspectRatio}</p>
                     </div>
-                    <div className={isLocked ? 'blur-sm opacity-40 select-none' : ''}>
+                    <div className={isActuallyLocked ? 'blur-sm opacity-40 select-none' : ''}>
                       <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Guidance</p>
                       <p className="text-xs font-bold text-slate-800">{item.guidanceScale}</p>
                     </div>
@@ -148,9 +177,13 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
 
                 <div className="p-6 border-t border-slate-100 bg-slate-50/30">
                    <div className="flex gap-3">
-                      {isLocked ? (
+                      {isActuallyLocked ? (
                         <button 
-                          onClick={isGuest ? onOpenAuth : onOpenPricing}
+                          onClick={() => {
+                            onClose();
+                            if (isGuest) navigate('/login');
+                            else onOpenPricing?.();
+                          }}
                           className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-xl"
                         >
                           {isGuest ? <><LogIn size={18} /> Login to Access</> : <><Crown size={18} fill="currentColor"/> Unlock Pro Archive</>}
