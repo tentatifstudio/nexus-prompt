@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, ArrowLeft, Loader2, Sparkles, Image as ImageIcon, Type, Terminal, Info } from 'lucide-react';
+import { Upload, ArrowLeft, Loader2, Sparkles, Image as ImageIcon, Type, Terminal, Info, Lock, Zap } from 'lucide-react';
+// Fix: Added missing motion import from framer-motion
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { promptService } from '../services/promptService';
 
@@ -8,6 +10,7 @@ interface CreatePostProps {
   onSuccess: () => void;
 }
 
+const ADMIN_EMAIL = "wahyupedia740@gmail.com";
 const MODELS = ['Flux', 'ImageFX', 'Midjourney', 'Stable Diffusion XL', 'DALL-E 3'];
 const FALLBACK_CATEGORIES = ['Character', 'Cyberpunk', 'Realistic', 'Illustration', '3D Render', 'Photography', 'Abstract'];
 
@@ -30,8 +33,11 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
     aspect_ratio: '1:1',
     description: '',
     seed: Math.floor(Math.random() * 1000000000),
-    guidance_scale: 7.5
+    guidance_scale: 7.5,
+    is_premium: false // Added premium status
   });
+
+  const isSuperAdmin = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
     const fetchCats = async () => {
@@ -83,6 +89,9 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
         beforeUrl = await promptService.uploadImage(beforeFile);
       }
 
+      // User posts are always free unless posted by Super Admin
+      const finalPremiumStatus = isSuperAdmin ? formData.is_premium : false;
+
       await promptService.createPrompt({
         user_id: user.id,
         title: formData.title,
@@ -96,8 +105,8 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
         guidance_scale: Number(formData.guidance_scale),
         description: formData.description,
         type: beforeUrl ? 'IMG2IMG' : 'TXT2IMG',
-        rarity: 'Common',
-        is_premium: false,
+        rarity: finalPremiumStatus ? 'Legendary' : 'Common',
+        is_premium: finalPremiumStatus,
         is_trending: false
       });
 
@@ -201,16 +210,40 @@ const CreatePost: React.FC<CreatePostProps> = ({ onBack, onSuccess }) => {
                    </div>
                 </div>
 
+                {isSuperAdmin && (
+                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-indigo-200 transition-colors">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+                            <Lock size={18} />
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-slate-900 uppercase">Premium Content</p>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase">Super Admin Only Feature</p>
+                         </div>
+                      </div>
+                      <button 
+                         type="button"
+                         onClick={() => setFormData({...formData, is_premium: !formData.is_premium})}
+                         className={`w-12 h-6 rounded-full relative transition-all ${formData.is_premium ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                      >
+                         <motion.div 
+                           animate={{ x: formData.is_premium ? 24 : 4 }}
+                           className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                         />
+                      </button>
+                   </div>
+                )}
+
                 <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-start gap-3">
                    <Info size={16} className="text-indigo-400 shrink-0 mt-0.5" />
                    <p className="text-[10px] font-medium text-indigo-700 leading-relaxed">
-                     Assets with both images allow viewers to see the transformation magic!
+                     Assets with comparison images get 4x more visibility on the home feed!
                    </p>
                 </div>
 
                 <button disabled={loading} type="submit" className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200">
                    {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={18} />}
-                   {loading ? 'Sharing to Nexus...' : 'Publish to Gallery'}
+                   {loading ? 'Publishing Identity...' : 'Release to Nexus'}
                 </button>
              </div>
           </div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Copy, Share2, CheckCircle2, Play, Terminal, Lock, Zap, LogIn, Crown, Eye } from 'lucide-react';
@@ -27,11 +26,14 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
 
   const isGuest = !user;
   const isPro = user?.is_pro;
-  const isFreeUser = user && !isPro;
   
-  // Logic: Pro users see everything. Guest/Free see blur unless they reveal.
-  const needsLock = isGuest || (isFreeUser && item.isPremium);
-  const isActuallyLocked = needsLock && !isRevealed && !isPro;
+  // Requirement: User posts (isPremium: false) are always open.
+  // Monetization: isPremium: true is locked unless user is Pro.
+  const contentRequiresPro = item.isPremium && !isPro;
+  
+  // Handle revealed status for Guest/Free via useMeteredAccess if needed,
+  // but prioritize "Regular posts are always open"
+  const isActuallyLocked = contentRequiresPro && !isRevealed;
   
   const handleCopy = () => {
     if (isActuallyLocked) return;
@@ -56,10 +58,8 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
   };
 
   const getLockMessage = () => {
-    if (!hasRemaining) return "Quota Habis! Upgrade ke Pro untuk akses tak terbatas.";
-    if (isGuest) return "Gunakan 1 kuota gratis untuk melihat prompt ini.";
-    if (isFreeUser && item.isPremium) return "Prompt Premium! Gunakan kuota untuk reveal.";
-    return "Click reveal to see prompt settings.";
+    if (!hasRemaining) return "Quota Exceeded! Upgrade to PRO for unlimited vault access.";
+    return "This is a Premium Legendary asset. Use 1 reveal quota or upgrade to PRO.";
   };
 
   return (
@@ -118,7 +118,7 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
 
                   <div className="mb-8 relative">
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                      <Terminal size={14} /> Secret Prompt
+                      <Terminal size={14} /> Secret Matrix
                     </h3>
                     
                     <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white group/prompt">
@@ -139,7 +139,7 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
                              onClick={handleReveal}
                              className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-600 transition-all shadow-lg"
                            >
-                             <Eye size={14} /> Reveal Prompt ({remaining}/3 Left)
+                             <Eye size={14} /> Reveal Content ({remaining}/3 Left)
                            </button>
                         </div>
                       )}
@@ -186,7 +186,7 @@ const Modal: React.FC<ModalProps> = ({ item, isOpen, onClose, onOpenAuth, onOpen
                           }}
                           className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-xl"
                         >
-                          {isGuest ? <><LogIn size={18} /> Login to Access</> : <><Crown size={18} fill="currentColor"/> Unlock Pro Archive</>}
+                          {isGuest ? <><LogIn size={18} /> Join for Access</> : <><Crown size={18} fill="currentColor"/> Unlock PRO VAULT</>}
                         </button>
                       ) : (
                         <button className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-xl">

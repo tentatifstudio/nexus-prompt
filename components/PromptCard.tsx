@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Star, Lock, Zap, Bookmark, Layers, Sparkles } from 'lucide-react';
+import { Star, Lock, Zap, Bookmark, Layers, Sparkles, Copy, Eye } from 'lucide-react';
 import { PromptItem } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -50,7 +50,8 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
     setIsHovered(false);
   };
 
-  const isPremiumLocked = item.isPremium && user?.plan !== 'pro';
+  // Only lock if the CONTENT is marked premium AND the user is NOT pro
+  const isActuallyLocked = item.isPremium && !user?.is_pro;
   const hasReference = !!item.imageSource;
 
   const authorName = item.author?.username || 'Creator';
@@ -100,17 +101,24 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
               </div>
               <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{authorName}</span>
            </Link>
-           <button onClick={(e) => { e.stopPropagation(); onToggleSave?.(item.id); }} className={`transition-all hover:scale-110 active:scale-90 ${isSaved ? 'text-indigo-600' : 'text-slate-300'}`}>
-              <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
-           </button>
+           <div className="flex items-center gap-3">
+              {item.isPremium && (
+                 <div className="bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-amber-200">
+                    Premium
+                 </div>
+              )}
+              <button onClick={(e) => { e.stopPropagation(); onToggleSave?.(item.id); }} className={`transition-all hover:scale-110 active:scale-90 ${isSaved ? 'text-indigo-600' : 'text-slate-300'}`}>
+                 <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
+              </button>
+           </div>
         </div>
 
-        {/* IMAGE AREA: POKEMON STYLE REVEAL */}
+        {/* IMAGE AREA */}
         <div 
           className="relative w-full aspect-[4/5] overflow-hidden bg-slate-100 cursor-pointer" 
           onClick={() => onClick(item)}
         >
-          {/* Main Content (After) */}
+          {/* Main Content */}
           <motion.img 
             src={item.imageResult} 
             alt={item.title}
@@ -122,7 +130,7 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
             transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
           />
 
-          {/* Reference Reveal (Before) */}
+          {/* Reference Reveal */}
           {hasReference && (
             <motion.div
               className="absolute inset-0 bg-slate-900"
@@ -135,9 +143,7 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
                 alt={`${item.title} Original`}
                 className="w-full h-full object-cover scale-110"
               />
-              {/* Magic Sparkle Overlay on Reference */}
               <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 mix-blend-screen animate-pulse" />
-              
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-xl text-white px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] border border-white/20 shadow-2xl flex items-center gap-2">
                 <Sparkles size={12} className="text-amber-300" />
                 Original Source
@@ -145,7 +151,17 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
             </motion.div>
           )}
 
-          {/* PREMIUM/RARITY BADGES */}
+          {/* Locked Status Indicator */}
+          {isActuallyLocked && (
+             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-900/10 backdrop-blur-[4px] pointer-events-none transition-opacity duration-300 group-hover:opacity-40">
+                <div className="w-12 h-12 rounded-2xl bg-white shadow-2xl flex items-center justify-center text-slate-900">
+                   <Lock size={20} />
+                </div>
+                <p className="mt-4 text-[9px] font-black text-white uppercase tracking-[0.3em] drop-shadow-lg">Locked Content</p>
+             </div>
+          )}
+
+          {/* BADGES */}
           <div className="absolute top-4 left-4 z-40 flex flex-col gap-2 pointer-events-none">
             <motion.span 
               initial={false}
@@ -154,24 +170,20 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
             >
               <Star size={10} fill="currentColor" /> {item.rarity}
             </motion.span>
-            
-            {item.isPremium && (
-              <motion.span 
-                initial={false}
-                animate={{ x: isHovered ? 8 : 0 }}
-                className="bg-amber-400 text-slate-900 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1.5"
-              >
-                {isPremiumLocked ? <Lock size={10} /> : <Zap size={10} fill="currentColor" />} PRO
-              </motion.span>
-            )}
           </div>
 
-          {/* COMPARE INDICATOR */}
-          {hasReference && !isHovered && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 bg-slate-900/40 backdrop-blur-md px-3 py-1.5 rounded-full text-[7px] font-black text-white uppercase tracking-[0.3em] border border-white/10 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-              Hold to Compare
-            </div>
-          )}
+          {/* ACTION OVERLAY */}
+          <div className="absolute bottom-4 left-4 right-4 z-40 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+             <div className="bg-slate-900/60 backdrop-blur-md px-3 py-1.5 rounded-full text-[8px] font-black text-white uppercase tracking-widest flex items-center gap-2 border border-white/10">
+                {isActuallyLocked ? <Lock size={10} /> : <Eye size={10} />}
+                {isActuallyLocked ? 'Unlock PRO' : 'View Settings'}
+             </div>
+             {!isActuallyLocked && (
+                <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg">
+                   <Copy size={14} />
+                </div>
+             )}
+          </div>
         </div>
 
         {/* FOOTER */}
@@ -180,16 +192,13 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
               <h3 className="text-sm font-black text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors leading-tight">{item.title}</h3>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.model}</p>
                 </div>
                 <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg uppercase border border-indigo-100/50">{item.category}</span>
               </div>
            </div>
         </div>
-
-        {/* 3D Reflection Effect (Bottom light) */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-indigo-500/5 to-transparent pointer-events-none" />
       </div>
     </motion.div>
   );
