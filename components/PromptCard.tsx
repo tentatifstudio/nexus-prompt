@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
@@ -60,7 +59,7 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
   const hasReference = !!item.imageSource;
 
   const authorName = item.author?.username || 'Nexus Creator';
-  const authorAvatar = item.author?.avatar_url || `https://ui-avatars.com/api/?name=${authorName}&background=random&color=fff`;
+  const authorAvatar = item.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=random&color=fff`;
 
   const rarityColors: Record<string, string> = {
     Common: 'bg-slate-500',
@@ -102,7 +101,15 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
            >
               <div className="w-7 h-7 rounded-full bg-slate-200 overflow-hidden border border-white shadow-sm ring-1 ring-slate-100">
-                 <img src={authorAvatar} className="w-full h-full object-cover" alt={authorName} />
+                 <img 
+                    src={authorAvatar} 
+                    className="w-full h-full object-cover" 
+                    alt={authorName} 
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=slate&color=fff`;
+                    }}
+                 />
               </div>
               <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{authorName}</span>
            </Link>
@@ -128,6 +135,10 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
             src={item.imageResult} 
             alt={item.title}
             className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+               e.currentTarget.onerror = null;
+               e.currentTarget.src = 'https://placehold.co/800x1000?text=Nexus+Artifact';
+            }}
             animate={{ 
                 scale: isHovered ? 1.1 : 1,
                 opacity: (isHovered && hasReference) ? 0 : 1 
@@ -147,6 +158,10 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
                 src={item.imageSource} 
                 alt={`${item.title} Original`}
                 className="w-full h-full object-cover scale-110"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'https://placehold.co/800x1000?text=Source+Unreachable';
+               }}
               />
               <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 mix-blend-screen animate-pulse" />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-xl text-white px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] border border-white/20 shadow-2xl flex items-center gap-2">

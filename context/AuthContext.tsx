@@ -55,6 +55,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const initAuth = async () => {
+    // EMERGENCY TIMEOUT: Force stop loading after 3.5 seconds
+    const safetyTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn("Auth initialization timed out. Releasing UI.");
+        setLoading(false);
+      }
+    }, 3500);
+
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
@@ -69,7 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error("AuthContext Init Error:", err);
       setUser(null);
     } finally {
-      // CRITICAL: Always release loading state
+      clearTimeout(safetyTimeout);
       setLoading(false);
     }
   };
@@ -104,9 +112,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
-        setLoading(false);
-      } else {
-        // Handle other events like INITIAL_SESSION
         setLoading(false);
       }
     });

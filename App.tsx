@@ -31,19 +31,18 @@ function Home({ onSelectItem }: HomeProps) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // INDEPENDENT FETCH: Runs immediately on mount without waiting for auth
+  // INDEPENDENT GALLERY FETCH: Does not wait for auth state
   useEffect(() => {
     let isMounted = true;
     
     const loadGalleryData = async () => {
-      // Start loading
-      setDataLoading(true);
-      setError(null);
+      if (isMounted) setDataLoading(true);
+      if (isMounted) setError(null);
       
       try {
         const [promptsData, catsData] = await Promise.all([
-          promptService.getAll(),
-          promptService.getCategories()
+          promptService.getAll().catch(e => { console.error("Prompt Fetch failed:", e); return []; }),
+          promptService.getCategories().catch(e => { console.error("Category Fetch failed:", e); return []; })
         ]);
         
         if (isMounted) {
@@ -51,12 +50,12 @@ function Home({ onSelectItem }: HomeProps) {
           setCategories(['All', ...(catsData || [])]);
         }
       } catch (err: any) {
-        console.error("Gallery Initialization Error:", err);
+        console.error("Gallery Initialization Critical Error:", err);
         if (isMounted) {
           setError(err.message || "Archive data corrupted. Please refresh.");
         }
       } finally {
-        // GUARANTEED FINALLY: Stops the spinner no matter what
+        // GUARANTEED RELEASE: Spinner stops no matter what happens in the try/catch
         if (isMounted) {
           setDataLoading(false);
         }
