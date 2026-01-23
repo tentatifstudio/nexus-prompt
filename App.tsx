@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Loader2, Search, Shield, LogOut, PlusCircle, Settings as SettingsIcon, UserCircle, Crown } from 'lucide-react';
+import { Zap, Loader2, Search, Shield, LogOut, PlusCircle, Settings as SettingsIcon, UserCircle, Crown, AlertCircle } from 'lucide-react';
 import { PromptItem } from './types.ts';
 import PromptCard from './components/PromptCard.tsx';
 import Modal from './components/Modal.tsx';
@@ -27,26 +28,38 @@ function Home({ onSelectItem }: HomeProps) {
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    let isMounted = true;
     const loadData = async () => {
       setDataLoading(true);
+      setError(null);
       try {
         const [promptsData, catsData] = await Promise.all([
           promptService.getAll(),
           promptService.getCategories()
         ]);
-        setPrompts(promptsData || []);
-        setCategories(['All', ...catsData]);
-      } catch (error) {
-        console.error("Fetch failed", error);
+        
+        if (isMounted) {
+          setPrompts(promptsData || []);
+          setCategories(['All', ...(catsData || [])]);
+        }
+      } catch (err) {
+        console.error("Gallery fetch failed:", err);
+        if (isMounted) {
+          setError("Failed to load archive. Please refresh.");
+        }
       } finally {
-        setDataLoading(false);
+        if (isMounted) {
+          setDataLoading(false);
+        }
       }
     };
     loadData();
+    return () => { isMounted = false; };
   }, []);
 
   const filteredData = useMemo(() => {
@@ -62,8 +75,29 @@ function Home({ onSelectItem }: HomeProps) {
   if (dataLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-        <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Initializing Gallery...</p>
+        <div className="relative mb-6">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+          <div className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-full animate-pulse" />
+        </div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Initializing Nexus Gallery</p>
+      </div>
+    );
+  }
+
+  if (error && prompts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 border border-red-100">
+           <AlertCircle size={32} />
+        </div>
+        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Archive Offline</h3>
+        <p className="text-slate-500 text-sm font-medium mb-8 max-w-xs">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-8 py-3 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-600 transition-all"
+        >
+          Try Reconnect
+        </button>
       </div>
     );
   }
@@ -81,7 +115,7 @@ function Home({ onSelectItem }: HomeProps) {
               placeholder="Explore community prompts..." 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
-              className="w-full h-16 pl-16 pr-6 rounded-[28px] bg-white border border-slate-100 shadow-xl outline-none focus:ring-4 ring-indigo-500/5 transition-all" 
+              className="w-full h-16 pl-16 pr-6 rounded-[28px] bg-white border border-slate-100 shadow-xl outline-none focus:ring-4 ring-indigo-500/5 transition-all text-sm font-medium" 
             />
           </div>
           <div className="flex items-center justify-center gap-2 overflow-x-auto no-scrollbar py-2">
@@ -99,13 +133,19 @@ function Home({ onSelectItem }: HomeProps) {
 
       <motion.div layout className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <AnimatePresence mode='popLayout'>
-          {filteredData.map((item) => (
-            <PromptCard 
-              key={item.id} 
-              item={item} 
-              onClick={onSelectItem} 
-            />
-          ))}
+          {filteredData.length > 0 ? (
+            filteredData.map((item) => (
+              <PromptCard 
+                key={item.id} 
+                item={item} 
+                onClick={onSelectItem} 
+              />
+            ))
+          ) : (
+            <div className="col-span-full py-20 text-center">
+               <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No artifacts found matching your criteria</p>
+            </div>
+          )}
         </AnimatePresence>
       </motion.div>
     </>

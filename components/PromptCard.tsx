@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
@@ -50,11 +51,15 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
     setIsHovered(false);
   };
 
+  // Safe property checks
+  const isPremiumContent = !!item.isPremium;
+  const isUserPro = !!user?.is_pro;
+  
   // Only lock if the CONTENT is marked premium AND the user is NOT pro
-  const isActuallyLocked = item.isPremium && !user?.is_pro;
+  const isActuallyLocked = isPremiumContent && !isUserPro;
   const hasReference = !!item.imageSource;
 
-  const authorName = item.author?.username || 'Creator';
+  const authorName = item.author?.username || 'Nexus Creator';
   const authorAvatar = item.author?.avatar_url || `https://ui-avatars.com/api/?name=${authorName}&background=random&color=fff`;
 
   const rarityColors: Record<string, string> = {
@@ -102,7 +107,7 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
               <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{authorName}</span>
            </Link>
            <div className="flex items-center gap-3">
-              {item.isPremium && (
+              {isPremiumContent && (
                  <div className="bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-amber-200">
                     Premium
                  </div>
@@ -166,9 +171,9 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
             <motion.span 
               initial={false}
               animate={{ x: isHovered ? 5 : 0 }}
-              className={`${rarityColors[item.rarity]} text-white px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter shadow-xl flex items-center gap-1.5`}
+              className={`${rarityColors[item.rarity || 'Common']} text-white px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter shadow-xl flex items-center gap-1.5`}
             >
-              <Star size={10} fill="currentColor" /> {item.rarity}
+              <Star size={10} fill="currentColor" /> {item.rarity || 'Common'}
             </motion.span>
           </div>
 
@@ -189,13 +194,13 @@ const PromptCard: React.FC<PromptCardProps> = ({ item, onClick, isSaved = false,
         {/* FOOTER */}
         <div className="p-5 bg-white border-t border-slate-50 flex flex-col justify-between flex-1 z-40" onClick={() => onClick(item)}>
            <div className="space-y-3">
-              <h3 className="text-sm font-black text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors leading-tight">{item.title}</h3>
+              <h3 className="text-sm font-black text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors leading-tight">{item.title || 'Untitled Artifact'}</h3>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.model}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.model || 'Unknown AI'}</p>
                 </div>
-                <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg uppercase border border-indigo-100/50">{item.category}</span>
+                <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg uppercase border border-indigo-100/50">{item.category || 'General'}</span>
               </div>
            </div>
         </div>
